@@ -18,11 +18,7 @@ def galaxies_data(dict_path, path_out=None, return_object = False):
     galaxies = []
     objects = []
     for i in range(len(x["galaxies"])):
-        galaxy = x["galaxies"][i]
-        info = galaxy["info"]
-        name = galaxy["name"]
-        filters, fitts = get_fitts(galaxy)
-        gdata = stmo.galaxy(name, info, filters, fitss)
+        gdata = calculate_stmo(x["galaxies"][i])
         galaxies.append(get_galaxy_data(gdata))
         if return_object:
             objects.append(gdata)
@@ -40,6 +36,14 @@ def galaxies_data(dict_path, path_out=None, return_object = False):
     else:
         return galaxies
 
+def calculate_stmo(galaxy):
+    """Runs statmorph and returns stmo.galaxy object for the given galaxy"""
+    info = galaxy["info"]
+    name = galaxy["name"]
+    filters, fitss = get_fitss(galaxy)
+    gdata = stmo.galaxy(name, info, filters, fitss)
+    return gdata
+
 def adhoc_path(path):
     """ad-hoc modifies the path to file according to current setup
     """
@@ -48,11 +52,13 @@ def adhoc_path(path):
     p = p.replace("small/", "small/results_")
     return p
 
-def get_fitts(galaxy):
+def get_fitss(galaxy):
+    """gets fits files of galaxy in different wavelengths
+    """
     filters = []
     fitss = []
     for l in range(len(galaxy["filters"])):
-        path = adhoc_path(galaxy["files"][i])
+        path = adhoc_path(galaxy["files"][l])
         try:
             fitss.append(astropy.io.fits.open(path))
             filters.append(galaxy["filters"][l])
@@ -61,18 +67,24 @@ def get_fitts(galaxy):
     return filters, fitss
 
 def save_as_json(thing, path):
+    """saves provided object as json at specified path
+    """
     fil = open(path, "w")
     json.dump(thing, fil, indent=4)
     fil.close()
 
 
 def fetch_json(path):
+    """fetches data of json object at specified path
+    """
     fil = open(path, "r")
     data = json.load(fil)
     fil.close()
     return data
 
 def get_galaxies_data(galaxies):
+    """gathers data from stmo.galaxy objects in output format 
+    """
     gals = []
     for galaxy in galaxies:
         gald = get_galaxy_data(galaxy)
@@ -80,6 +92,9 @@ def get_galaxies_data(galaxies):
     return gals
 
 def get_galaxy_data(galaxy):
+    """extracts data from the stmo.galaxy object and formats them into the 
+    output format
+    """
     gald = dict()
     gald["name"] = galaxy.name
     gald["filters"] = galaxy.filters
@@ -95,6 +110,9 @@ def get_galaxy_data(galaxy):
 
 
 def get_frame_data(frame):
+    """extracts data from a stmo.frame object and formats it into the output
+    format
+    """
     st = frame.stmo
     data = {
         "xc_centroid": float(st.xc_centroid),

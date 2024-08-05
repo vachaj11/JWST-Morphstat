@@ -6,20 +6,20 @@ import numpy as np
 import run
 
 
-def get_galaxy_entry(galaxies_full, gal_name, fil_names):
+def get_galaxy_entry(galaxies_full, gal_name, fil_names = None):
     """gets a galaxy of certain name and certain filters from a list"""
     for g in galaxies_full:
         if g["name"] == gal_name:
             ind = []
             for f in g["filters"]:
-                if f not in fil_names:
+                if fil_names is not None and f not in fil_names:
                     ind.append(g["filters"].index(f))
             if len(ind) < len(g["filters"]):
                 ind.reverse()
                 for i in ind:
-                    g["filters"].pop(i)
-                    g["files"].pop(i)
-                    g["fileInfo"].pop(i)
+                    for nam in {"filters, files, fileInfo, frames"}:
+                        if nam in g.keys():
+                            g[name].pop(i)
                 return g
             else:
                 return None
@@ -101,7 +101,7 @@ def get_filter_or_avg(galaxy, value, filt):
     """depending on provided parameter/name of filter either return value for
     the galaxy in a given filter or averaged across filters
     """
-    if filt == "aver":
+    if filt == "avg":
         val = 0
         for f in galaxy["frames"]:
             val += f[value]
@@ -143,3 +143,29 @@ def get_outliers(galaxies, value, sig = 3, filt = "avg"):
         if data[i]-mean < -sig*std or data[i]-mean> sig*std:
             gal_bad.append(galaxies[ind[i]])
     return gal_bad
+    
+def print_closest(pos, data, fig = None):
+    """prints the name of the galaxy closest to the position"""
+    if fig is not None:
+        ax = fig.axes[0]
+        wy = abs(ax.get_xlim()[0]-ax.get_xlim()[1])
+        wx = abs(ax.get_ylim()[0]-ax.get_ylim()[1])
+    else:
+        wx = 1
+        wy = 1
+    if data:
+        closest = data[0][2]
+        distance = abs(data[0][0]-pos[0])*wx+abs(data[0][1]-pos[1])*wy
+    else:
+        print("No data")
+        return None
+    for d in data:
+        coor = [d[0]-pos[0],d[1]-pos[1]]
+        dist = np.sqrt((coor[0]*wx)**2+(coor[1]*wy)**2)
+        if dist < distance:
+            closest = d[2]
+            distance = dist
+    print(closest)
+    
+# gf = lambda name: run.calculate_stmo(resu.get_galaxy_entry(run.fetch_json("dictionary_full.json")["galaxies"],name))
+

@@ -19,6 +19,9 @@ from statmorph.utils.image_diagnostics import make_figure
 
 
 class galaxy:
+    """class representing a single galaxy with multiple parameters, frames in
+    different filters and corresponding methods
+    """
     def __init__(self, name, info, filters, fitss):
         self.fitss = fitss
         self.info = info
@@ -28,6 +31,7 @@ class galaxy:
         self.target_flag = self.target_test(self.frames)
 
     def get_frames(self, filters, fitss):
+        """calculates frames objects from provided fits data"""
         if len(filters) == len(fitss):
             frames = []
             for i in range(len(filters)):
@@ -38,6 +42,8 @@ class galaxy:
             return []
 
     def target_test(self, frames):
+        """tests whether identified targets in multiple frames are
+        overlapping"""
         try:
             for i in range(len(frames) - 1):
                 target1 = frames[i].target
@@ -57,6 +63,9 @@ class galaxy:
 
 
 class frame:
+    """class holding all data relating to a single frame/photo of a galaxy at
+    some wavelength needed to run statmorph, corresponding methods, etc.
+    """
     def __init__(self, name, fits):
         self.name = name
         self.fits = fits
