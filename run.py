@@ -1,6 +1,7 @@
 """various methods with logic for fetching and building up data for/from the
 statmorph computation
 """
+
 import json
 import astropy
 import stmo
@@ -9,8 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def galaxies_data(dict_path, path_out=None, return_object = False):
-    """Main function that computes statmorph result for an inputted 
+def galaxies_data(dict_path, path_out=None, return_object=False):
+    """Main function that computes statmorph result for an inputted
     dictionary
     """
     t0 = time.time()
@@ -36,6 +37,7 @@ def galaxies_data(dict_path, path_out=None, return_object = False):
     else:
         return galaxies
 
+
 def calculate_stmo(galaxy):
     """Runs statmorph and returns stmo.galaxy object for the given galaxy"""
     info = galaxy["info"]
@@ -44,17 +46,17 @@ def calculate_stmo(galaxy):
     gdata = stmo.galaxy(name, info, filters, fitss)
     return gdata
 
+
 def adhoc_path(path):
-    """ad-hoc modifies the path to file according to current setup
-    """
+    """ad-hoc modifies the path to file according to current setup"""
     p = "../galfit_results/" + path[:-4]
     p = p.replace("big/", "big/results_")
     p = p.replace("small/", "small/results_")
     return p
 
+
 def get_fitss(galaxy):
-    """gets fits files of galaxy in different wavelengths
-    """
+    """gets fits files of galaxy in different wavelengths"""
     filters = []
     fitss = []
     for l in range(len(galaxy["filters"])):
@@ -63,36 +65,36 @@ def get_fitss(galaxy):
             fitss.append(astropy.io.fits.open(path))
             filters.append(galaxy["filters"][l])
         except:
-            print("Couldn't locate "+path)
+            print("Couldn't locate " + path)
     return filters, fitss
 
+
 def save_as_json(thing, path):
-    """saves provided object as json at specified path
-    """
+    """saves provided object as json at specified path"""
     fil = open(path, "w")
     json.dump(thing, fil, indent=4)
     fil.close()
 
 
 def fetch_json(path):
-    """fetches data of json object at specified path
-    """
+    """fetches data of json object at specified path"""
     fil = open(path, "r")
     data = json.load(fil)
     fil.close()
     return data
 
+
 def get_galaxies_data(galaxies):
-    """gathers data from stmo.galaxy objects in output format 
-    """
+    """gathers data from stmo.galaxy objects in output format"""
     gals = []
     for galaxy in galaxies:
         gald = get_galaxy_data(galaxy)
         gals.append(gald)
     return gals
 
+
 def get_galaxy_data(galaxy):
-    """extracts data from the stmo.galaxy object and formats them into the 
+    """extracts data from the stmo.galaxy object and formats them into the
     output format
     """
     gald = dict()

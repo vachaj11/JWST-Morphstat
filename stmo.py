@@ -1,6 +1,7 @@
 """classes representing each of the galaxies and frames, holding methods for
 statmorph computation, testing of the results, etc
 """
+
 import statmorph
 import astropy
 import matplotlib.pyplot as plt
@@ -22,6 +23,7 @@ class galaxy:
     """class representing a single galaxy with multiple parameters, frames in
     different filters and corresponding methods
     """
+
     def __init__(self, name, info, filters, fitss):
         self.fitss = fitss
         self.info = info
@@ -66,6 +68,7 @@ class frame:
     """class holding all data relating to a single frame/photo of a galaxy at
     some wavelength needed to run statmorph, corresponding methods, etc.
     """
+
     def __init__(self, name, fits):
         self.name = name
         self.fits = fits

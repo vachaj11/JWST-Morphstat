@@ -1,29 +1,30 @@
 """various methods for visualisation of the results
 """
+
 import matplotlib.pyplot as plt
 import matplotlib.image as mpi
 import numpy as np
 import resu
 
 
-def rem_bad_outliers(data, sig = 5):
-    """removes data from the set that are more than n-sigma out 
-    """
+def rem_bad_outliers(data, sig=5):
+    """removes data from the set that are more than n-sigma out"""
     mean = np.mean(data[0])
     std = np.std(data[0])
     ind = []
     for i in range(len(data[0])):
-        if data[0][i]-mean < -sig*std or data[0][i]-mean> sig*std:
+        if data[0][i] - mean < -sig * std or data[0][i] - mean > sig * std:
             ind.append(i)
     ind.reverse()
     if ind:
-        print(f"found {len(ind)} very bad (>{sig} sigma) outliers in the data")
+        print(f"found and removed {len(ind)} very bad (>{sig} sigma) outliers in the data")
     for dat in data:
         for i in ind:
             dat.pop(i)
     return data
 
-def plot_value(galaxies, valuex, valuey, filt = "avg"):
+
+def plot_value(galaxies, valuex, valuey, filt="avg"):
     """plots requested values (for a given filter or averaged) for a provided set
     of galaxies
     """
@@ -36,16 +37,23 @@ def plot_value(galaxies, valuex, valuey, filt = "avg"):
             valsy.append(valy)
             valsx.append(g["info"][valuex])
             valsg.append(g["name"])
-    valsy, valsx, valsg = rem_bad_outliers([valsy,valsx, valsg])
+    valsy, valsx, valsg = rem_bad_outliers([valsy, valsx, valsg])
     if filt:
-        plt.plot(valsx, valsy, linestyle="", marker="+", label=f"filter {filt} ({len(valsx)})")
+        plt.plot(
+            valsx,
+            valsy,
+            linestyle="",
+            marker="+",
+            label=f"filter {filt} ({len(valsx)})",
+        )
     else:
         plt.plot(valsx, valsy, linestyle="", marker="+", label=f"({len(valsx)})")
     plt.xlabel = valuex
     plt.ylabel = valuey
     return zip(valsx, valsy, valsg)
-    
-def plot_correlation(galaxies, valuex, valuey, filt = "avg"):
+
+
+def plot_correlation(galaxies, valuex, valuey, filt="avg"):
     """plots requested values (for a given filter or averaged) against each
     other or avaraged for a provided set of galaxies
     """
@@ -59,17 +67,24 @@ def plot_correlation(galaxies, valuex, valuey, filt = "avg"):
             valsy.append(valy)
             valsx.append(valx)
             valsg.append(g["name"])
-    valsy, valsx, valsg = rem_bad_outliers([valsy,valsx, valsg])
-    valsx, valsy, valsg = rem_bad_outliers([valsx,valsy, valsg])
+    valsy, valsx, valsg = rem_bad_outliers([valsy, valsx, valsg])
+    valsx, valsy, valsg = rem_bad_outliers([valsx, valsy, valsg])
     if filt:
-        plt.plot(valsx, valsy, linestyle="", marker="+", label=f"filter {filt} ({len(valsx)})")
+        plt.plot(
+            valsx,
+            valsy,
+            linestyle="",
+            marker="+",
+            label=f"filter {filt} ({len(valsx)})",
+        )
     else:
         plt.plot(valsx, valsy, linestyle="", marker="+", label=f"({len(valsx)})")
     plt.xlabel(valuex)
     plt.ylabel(valuey)
     return zip(valsx, valsy, valsg)
 
-def plot_value_difference(gals1, gals2, valuex, valuey, filt = "avg"):
+
+def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg"):
     """plots difference in requested value (for a given filter or averaged)
     for provided two sets of galaxies (and for different filters if filt is
     provided as a list)
@@ -80,26 +95,33 @@ def plot_value_difference(gals1, gals2, valuex, valuey, filt = "avg"):
     galf1 = resu.get_subset(gals1, gals2)
     galf2 = resu.get_subset(gals2, galf1)
     for i in range(len(galf1)):
-        if type(filt) == list and len(filt)==2:
+        if type(filt) == list and len(filt) == 2:
             val1 = resu.get_filter_or_avg(galf1[i], valuey, filt[0])
             val2 = resu.get_filter_or_avg(galf2[i], valuey, filt[1])
         else:
             val1 = resu.get_filter_or_avg(galf1[i], valuey, filt)
             val2 = resu.get_filter_or_avg(galf2[i], valuey, filt)
         if val1 and val2:
-            valsd.append(val2-val1)
+            valsd.append(val2 - val1)
             valsx.append(galf1[i]["info"][valuex])
             valsg.append(galf1[i]["name"])
-    #valsd, valsx = rem_bad_outliers([valsd,valsx])
+    # valsd, valsx = rem_bad_outliers([valsd,valsx])
     if filt:
-        plt.plot(valsx, valsd, linestyle="", marker="+", label=f"filter {filt} ({len(valsx)})")
+        plt.plot(
+            valsx,
+            valsd,
+            linestyle="",
+            marker="+",
+            label=f"filter {filt} ({len(valsx)})",
+        )
     else:
         plt.plot(valsx, valsd, linestyle="", marker="+", label=f"({len(valsx)})")
     plt.xlabel(valuex)
     plt.ylabel(valuey)
     return zip(valsx, valsd, valsg)
 
-def plot_histogram(galaxies, value, nbins=None, filt = "avg"):
+
+def plot_histogram(galaxies, value, nbins=None, filt="avg"):
     """plots a histogram of requested value (for a given filter or averaged)
     for a given set of galaxies
     """
@@ -114,12 +136,12 @@ def plot_histogram(galaxies, value, nbins=None, filt = "avg"):
     else:
         count, bins = np.histogram(vals)
     if filt:
-        plt.stairs(count/len(vals), bins, label=f"filter {filt} ({len(vals)})")
+        plt.stairs(count / len(vals), bins, label=f"filter {filt} ({len(vals)})")
     else:
-        plt.stairs(count/len(vals), bins, label=f"({len(vals)})")
+        plt.stairs(count / len(vals), bins, label=f"({len(vals)})")
 
 
-def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt = "avg"):
+def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt="avg"):
     """plots a joint histogram of requested value (for a given filter or
     averaged) for given two sets of galaxies
     """
@@ -152,67 +174,78 @@ def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt = "avg"):
     plt.title(f"Histogram comparison of {value}")
     plt.legend()
 
-def plot_value_filters(galaxies, valuex, valuey, filt = 2):
+
+def plot_value_filters(galaxies, valuex, valuey, filt=2):
     """plots requested values for a provided set of galaxies across multiple
     filters
     """
     vals = []
     if type(filt) == int:
         filts = resu.get_most_filters(galaxies, filt)
-    elif type(filt) in (list,set,tuple):
+    elif type(filt) in (list, set, tuple):
         filts = list(filt)
     elif type(filt) == str and filt == "avg":
         filts = ["avg"]
     else:
-        print("unrecognised type of filt: "+str(type(filt)))
+        print("unrecognised type of filt: " + str(type(filt)))
     for filt in filts:
         vals.extend(plot_value(galaxies, valuex, valuey, filt=filt))
     fig = plt.gcf()
-    fig.canvas.mpl_connect('button_press_event', lambda x:resu.print_closest([x.xdata,x.ydata], vals))
+    fig.canvas.mpl_connect(
+        "button_press_event", lambda x: resu.print_closest([x.xdata, x.ydata], vals)
+    )
 
-def plot_correlation_filters(galaxies, valuex, valuey, filt = 2):
+
+def plot_correlation_filters(galaxies, valuex, valuey, filt=2):
     """plots requested values agains each other for a provided set of galaxies
     across multiple filters
     """
     vals = []
     if type(filt) == int:
         filts = resu.get_most_filters(galaxies, filt)
-    elif type(filt) in (list,set,tuple):
+    elif type(filt) in (list, set, tuple):
         filts = list(filt)
     elif type(filt) == str and filt == "avg":
         filts = ["avg"]
     else:
-        print("unrecognised type of filt: "+str(type(filt)))
+        print("unrecognised type of filt: " + str(type(filt)))
     for filt in filts:
         vals.extend(plot_correlation(galaxies, valuex, valuey, filt=filt))
     fig = plt.gcf()
-    fig.canvas.mpl_connect('button_press_event', lambda x:resu.print_closest([x.xdata,x.ydata], vals, fig = fig))
-        
-def plot_histogram_filters(galaxies, value, filt = 2):
+    fig.canvas.mpl_connect(
+        "button_press_event",
+        lambda x: resu.print_closest([x.xdata, x.ydata], vals, fig=fig),
+    )
+
+
+def plot_histogram_filters(galaxies, value, filt=2):
     """plots histograms of requested value for a given set of galaxies across
     multiple filters
     """
     if type(filt) == int:
         filts = resu.get_most_filters(galaxies, filt)
-    elif type(filt) in (list,set,tuple):
+    elif type(filt) in (list, set, tuple):
         filts = list(filt)
     elif type(filt) == str and filt == "avg":
         filts = ["avg"]
     else:
-        print("unrecognised type of filt: "+str(type(filt)))
+        print("unrecognised type of filt: " + str(type(filt)))
     for filt in filts:
         plot_histogram(galaxies, value, filt=filt)
     plt.title(f"Histogram of {value}")
-    
-def plot_pic_value(galaxy, values = ["C","A","S"]):
+
+
+def plot_pic_value(galaxy, values=["C", "A", "S"]):
     """for a given galaxy show its colour picture jointly with graphs of
     requested values as a function of wavelength
     """
     fig = plt.figure()
-    gs = fig.add_gridspec(len(values)+1, hspace=0,height_ratios=[3]+[1 for i in values])
+    gs = fig.add_gridspec(
+        len(values) + 1, hspace=0, height_ratios=[3] + [1 for i in values]
+    )
     axs = gs.subplots()
     fig.suptitle(galaxy["name"])
-    pic_path = "../colour_images/"+galaxy["name"]+".png"
+    pic_path = "../colour_images/" + galaxy["name"] + ".png"
     img = mpi.imread(pic_path)
     axs[0].imshow(img)
     axs[0].set_axis_off()
@@ -223,7 +256,7 @@ def plot_pic_value(galaxy, values = ["C","A","S"]):
         for l in range(len(values)):
             data[l].append(galaxy["frames"][i][values[l]])
     for i in range(len(data)):
-        axs[i+1].plot(wavel, data[i])
-        axs[i+1].set(xlabel="wavelength", ylabel = values[i])
-        axs[i+1].label_outer()
-        axs[i+1].sharex(axs[1])
+        axs[i + 1].plot(wavel, data[i])
+        axs[i + 1].set(xlabel="wavelength", ylabel=values[i])
+        axs[i + 1].label_outer()
+        axs[i + 1].sharex(axs[1])

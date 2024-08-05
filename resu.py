@@ -1,12 +1,13 @@
 """various methods for filtering and manipulating the results
 """
+
 import json
 import matplotlib.pyplot as plt
 import numpy as np
 import run
 
 
-def get_galaxy_entry(galaxies_full, gal_name, fil_names = None):
+def get_galaxy_entry(galaxies_full, gal_name, fil_names=None):
     """gets a galaxy of certain name and certain filters from a list"""
     for g in galaxies_full:
         if g["name"] == gal_name:
@@ -37,7 +38,7 @@ def get_bad_frames(galaxy):
 
 
 def frames_pruning(galaxy):
-    """removes bad frames from a galaxy """
+    """removes bad frames from a galaxy"""
     ind = get_bad_frames(galaxy)
     for i in ind:
         galaxy["frames"].pop(i)
@@ -46,14 +47,15 @@ def frames_pruning(galaxy):
 
 
 def galaxy_pruning(galaxies):
-    """removes problematic galaxies and frames from an output list of 
-    galaxies 
+    """removes problematic galaxies and frames from an output list of
+    galaxies
     """
     gal_out = []
     for g in galaxies:
         if g["misc"]["target_flag"] == 1:
             gal_out.append(frames_pruning(g))
     return gal_out
+
 
 def get_bad_cases(galaxies_full, galaxies_out):
     """creates input list of problematic galaxies frames from output
@@ -73,11 +75,12 @@ def get_bad_cases(galaxies_full, galaxies_out):
 
 
 def json_bad_cases(path_full, path_out, path_new):
-    """from old input+output creates new input json with problematic cases """
+    """from old input+output creates new input json with problematic cases"""
     gal_full = run.fetch_json(path_full)["galaxies"]
     gal_out = run.fetch_json(path_out)["galaxies"]
     gal_new = get_bad_cases(gal_full, gal_out)
     run.save_as_json({"galaxies": gal_new}, path_new)
+
 
 def get_subset(galaxies_out, galaxies_in):
     """get subset of '_out' galaxies that matches set of '_in' galaxies"""
@@ -88,6 +91,7 @@ def get_subset(galaxies_out, galaxies_in):
             galaxies_sub.append(go)
     return galaxies_sub
 
+
 def json_subset(path_out, path_in, path_new):
     """from input file specifing subset of output file's galaxies create a
     subset output json
@@ -96,7 +100,8 @@ def json_subset(path_out, path_in, path_new):
     gal_in = run.fetch_json(path_in)["galaxies"]
     gal_new = get_subset(gal_out, gal_in)
     run.save_as_json({"galaxies", gal_new}, path_new)
-    
+
+
 def get_filter_or_avg(galaxy, value, filt):
     """depending on provided parameter/name of filter either return value for
     the galaxy in a given filter or averaged across filters
@@ -115,20 +120,20 @@ def get_filter_or_avg(galaxy, value, filt):
     else:
         return None
 
+
 def get_most_filters(galaxies, no):
-    """for the given set of galaxies, finds the first n most common filters
-    """
+    """for the given set of galaxies, finds the first n most common filters"""
     filt_names = []
     for g in galaxies:
         filt_names += g["filters"]
     unique, counts = np.unique(filt_names, return_counts=True)
     no_w_filt = zip(unique, counts)
-    filt_cut = [l[0] for l in sorted(no_w_filt, key= lambda i: i[1], reverse = True)][:no]
-    return filt_cut    
+    filt_cut = [l[0] for l in sorted(no_w_filt, key=lambda i: i[1], reverse=True)][:no]
+    return filt_cut
 
-def get_outliers(galaxies, value, sig = 3, filt = "avg"):
-    """for provided galaxies find outliers of n-sigma in the given value
-    """
+
+def get_outliers(galaxies, value, sig=3, filt="avg"):
+    """for provided galaxies find outliers of n-sigma in the given value"""
     data = []
     ind = []
     for g in galaxies:
@@ -140,32 +145,39 @@ def get_outliers(galaxies, value, sig = 3, filt = "avg"):
     std = np.std(data)
     gal_bad = []
     for i in range(len(data)):
-        if data[i]-mean < -sig*std or data[i]-mean> sig*std:
+        if data[i] - mean < -sig * std or data[i] - mean > sig * std:
             gal_bad.append(galaxies[ind[i]])
     return gal_bad
-    
-def print_closest(pos, data, fig = None):
+
+
+def print_closest(pos, data, fig=None):
     """prints the name of the galaxy closest to the position"""
     if fig is not None:
         ax = fig.axes[0]
-        wy = abs(ax.get_xlim()[0]-ax.get_xlim()[1])
-        wx = abs(ax.get_ylim()[0]-ax.get_ylim()[1])
+        wy = abs(ax.get_xlim()[0] - ax.get_xlim()[1])
+        wx = abs(ax.get_ylim()[0] - ax.get_ylim()[1])
     else:
         wx = 1
         wy = 1
     if data:
         closest = data[0][2]
-        distance = abs(data[0][0]-pos[0])*wx+abs(data[0][1]-pos[1])*wy
+        distance = abs(data[0][0] - pos[0]) * wx + abs(data[0][1] - pos[1]) * wy
     else:
         print("No data")
         return None
     for d in data:
-        coor = [d[0]-pos[0],d[1]-pos[1]]
-        dist = np.sqrt((coor[0]*wx)**2+(coor[1]*wy)**2)
+        coor = [d[0] - pos[0], d[1] - pos[1]]
+        dist = np.sqrt((coor[0] * wx) ** 2 + (coor[1] * wy) ** 2)
         if dist < distance:
             closest = d[2]
             distance = dist
     print(closest)
-    
-# gf = lambda name: run.calculate_stmo(resu.get_galaxy_entry(run.fetch_json("dictionary_full.json")["galaxies"],name))
 
+
+def get_galaxy(name):
+    filj = run.fetch_json("dictionary_full.json")["galaxies"]
+    gal_entry = get_galaxy_entry(filj, name)
+    return run.calculate_stmo(gal_entry)
+
+
+# gf = lambda name: run.calculate_stmo(resu.get_galaxy_entry(run.fetch_json("dictionary_full.json")["galaxies"],name))
