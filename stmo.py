@@ -59,9 +59,14 @@ class galaxy:
                         f"targets in {self.name} frames {frames[i+1].name} and {frames[i].name} non-ovelapping"
                     )
                     return 3
-            return 1
+                if ol_size < 0.5 * max(t1_size, t2_size):
+                    print(
+                        f"targets in {self.name} frames {frames[i+1].name} and {frames[i].name} suspiciously different"
+                    )
+                    return 2
+            return 0
         except:
-            return 2
+            return 1
 
 
 class frame:

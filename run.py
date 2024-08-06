@@ -155,12 +155,12 @@ def get_frame_data(frame):
         "flag": st.flag,
         "flag_sersic": st.flag_sersic,
         "_name": frame.name,
-        "_mask_size": frame.mask.sum(),
-        "_target_size": frame.target.sum(),
+        "_mask_size": int(frame.mask.sum()),
+        "_target_size": int(frame.target.sum()),
         "_subtracted": not np.array_equal(frame.data, frame.data_sub),
         "_psf_used": frame.psf is not None,
-        "_bg_mean": frame.bg_mean,
-        "_bg_median": frame.bg_med,
-        "_bg_std": frame.bg_std,
+        "_bg_mean": float(frame.bg_mean),
+        "_bg_median": float(frame.bg_med),
+        "_bg_std": float(frame.bg_std),
     }
     return data

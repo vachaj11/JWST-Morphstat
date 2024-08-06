@@ -101,6 +101,24 @@ def json_subset(path_out, path_in, path_new):
     gal_new = get_subset(gal_out, gal_in)
     run.save_as_json({"galaxies", gal_new}, path_new)
 
+def get_separate_in_value(galaxies, value):
+    """separate galaxies based on requested value
+    """
+    values = {}
+    for g in galaxies:
+        if value in g["info"].keys():
+            val = g["info"][value]
+        elif value in g["misc"].keys():
+            val = g["misc"][value]
+        else:
+            val = None
+        if val in values.keys():
+            values[val].append(g)
+        else:
+            values[val] = [g]
+    return values
+        
+        
 
 def get_filter_or_avg(galaxy, value, filt):
     """depending on provided parameter/name of filter either return value for
@@ -152,6 +170,8 @@ def get_outliers(galaxies, value, sig=3, filt="avg"):
 
 def print_closest(pos, data, fig=None):
     """prints the name of the galaxy closest to the position"""
+    if not (pos[0] and pos[1]):
+        return None
     if fig is not None:
         ax = fig.axes[0]
         wy = abs(ax.get_xlim()[0] - ax.get_xlim()[1])
@@ -175,6 +195,9 @@ def print_closest(pos, data, fig=None):
 
 
 def get_galaxy(name):
+    """find galaxy of a given name and calculate stmo for it returning full
+    results object
+    """
     filj = run.fetch_json("dictionary_full.json")["galaxies"]
     gal_entry = get_galaxy_entry(filj, name)
     return run.calculate_stmo(gal_entry)

@@ -17,10 +17,13 @@ def rem_bad_outliers(data, sig=5):
             ind.append(i)
     ind.reverse()
     if ind:
-        print(f"found and removed {len(ind)} very bad (>{sig} sigma) outliers in the data")
+        print(f"found and removed the following {len(ind)} very bad (>{sig} sigma) outliers in the data:")
     for dat in data:
         for i in ind:
+            if type(dat[i]) == str:
+                print(dat[i],end = ", ")
             dat.pop(i)
+    print()
     return data
 
 
@@ -146,12 +149,15 @@ def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt="avg"):
     averaged) for given two sets of galaxies
     """
     vals1 = []
+    vals1g = []
     vals2 = []
+    vals2g = []
     for g in galaxies1:
         val = resu.get_filter_or_avg(g, value, filt)
         if val:
             vals1.append(val)
-    vals1 = rem_bad_outliers([vals1])[0]
+            vals1g.append(g)
+    vals1 = rem_bad_outliers([vals1, val1g])[0]
     if nbins is not None:
         count1, bins1 = np.histogram(vals1, nbins)
     else:
@@ -160,7 +166,8 @@ def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt="avg"):
         val = resu.get_filter_or_avg(g, value, filt)
         if val:
             vals2.append(val)
-    vals2 = rem_bad_outliers([vals2])[0]
+            vals2g.append(val)
+    vals2 = rem_bad_outliers([vals2,vals2g])[0]
     if nbins is not None:
         count2, bins2 = np.histogram(vals2, nbins)
     else:
@@ -245,7 +252,7 @@ def plot_pic_value(galaxy, values=["C", "A", "S"]):
     )
     axs = gs.subplots()
     fig.suptitle(galaxy["name"])
-    pic_path = "../colour_images/" + galaxy["name"] + ".png"
+    pic_path = "../galfit_results/colour_images/" + galaxy["name"] + ".png"
     img = mpi.imread(pic_path)
     axs[0].imshow(img)
     axs[0].set_axis_off()
