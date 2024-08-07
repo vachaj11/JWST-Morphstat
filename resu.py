@@ -123,18 +123,28 @@ def get_separate_in_value(galaxies, value):
 def get_filter_or_avg(galaxy, value, filt):
     """depending on provided parameter/name of filter either return value for
     the galaxy in a given filter or averaged across filters
+    works for both input and output galaxy list formats
     """
     if filt == "avg":
         val = 0
-        for f in galaxy["frames"]:
-            val += f[value]
+        for i in range(len(galaxy["filters"])):
+            for k in galaxy.keys():
+                f = galaxy[k]
+                if type(f) == list and len(f) == len(galaxy["filters"]):
+                    if type(f[i]) == dict and value in f[i].keys():
+                       val += float(f[i][value])
         if val:
-            val = val / len(galaxy["frames"])
+            val = val / len(galaxy["filters"])
             return val
         else:
             return None
     elif filt in galaxy["filters"]:
-        return galaxy["frames"][galaxy["filters"].index(filt)][value]
+        i = galaxy["filters"].index(filt)
+        for k in galaxy.keys():
+            if len(galaxy[k]) == len(galaxy["filters"]) and type(galaxy[k][i]) == dict:
+                if value in galaxy[k][i].keys():
+                    return float(galaxy[k][i][value])
+        return None
     else:
         return None
 

@@ -26,7 +26,6 @@ def rem_bad_outliers(data, sig=5):
     print()
     return data
 
-
 def plot_value(galaxies, valuex, valuey, filt="avg"):
     """plots requested values (for a given filter or averaged) for a provided set
     of galaxies
@@ -108,8 +107,7 @@ def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg"):
             valsd.append(val2 - val1)
             valsx.append(galf1[i]["info"][valuex])
             valsg.append(galf1[i]["name"])
-    # valsd, valsx = rem_bad_outliers([valsd,valsx])
-    if filt:
+    if type(filt) == str:
         plt.plot(
             valsx,
             valsd,
@@ -121,7 +119,12 @@ def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg"):
         plt.plot(valsx, valsd, linestyle="", marker="+", label=f"({len(valsx)})")
     plt.xlabel(valuex)
     plt.ylabel(valuey)
-    return zip(valsx, valsd, valsg)
+    vals = zip(valsx, valsd, valsg)
+    fig = plt.gcf()
+    fig.canvas.mpl_connect(
+        "button_press_event",
+        lambda x: resu.print_closest([x.xdata, x.ydata], vals, fig=fig),
+    )
 
 
 def plot_histogram(galaxies, value, nbins=None, filt="avg"):
@@ -267,3 +270,51 @@ def plot_pic_value(galaxy, values=["C", "A", "S"]):
         axs[i + 1].set(xlabel="wavelength", ylabel=values[i])
         axs[i + 1].label_outer()
         axs[i + 1].sharex(axs[1])
+        
+        
+def plot_sersic(galsout, galsin, valueout, filt="avg"):
+    """plots a sersic fitting parameter (for a given filter or
+    averaged) for provided input and output set of galaxies
+    """
+    valsout = []
+    valsin = []
+    valsg = []
+    transcript = {
+        "sersic_amplitude": "m",
+        "sersic_rhalf": "Re",
+        "sersic_n": "n",
+        "sersic_xc": "x0",
+        "sersic_yc": "y0",
+        "sersic_ellip": "q",
+        "sersic_theta": "PA",
+        }
+    if valueout in transcript.keys():
+        valuein = transcript[valueout]
+    else:
+        valuein = ""
+    galfout = resu.get_subset(galsout, galsin)
+    galfin = resu.get_subset(galsin, galfout)
+    for i in range(len(galfout)):
+        val1 = resu.get_filter_or_avg(galfout[i], valueout, filt)
+        val2 = resu.get_filter_or_avg(galfin[i], valuein, filt)
+        if val1 and val2:
+            valsout.append(val1)
+            valsin.append(val2)
+            valsg.append(galfout[i]["name"])
+    valsout, valsin, valsg = rem_bad_outliers([valsout, valsin, valsg])
+    valsin, valsout, valsg = rem_bad_outliers([valsin, valsout, valsg])
+    plt.plot(
+        valsin,
+        valsout,
+        linestyle="",
+        marker="+",
+        label=f"filter {filt} ({len(valsin)})",
+    )
+    plt.xlabel(valuein)
+    plt.ylabel(valueout)
+    vals = list(zip(valsin, valsout, valsg))
+    fig = plt.gcf()
+    fig.canvas.mpl_connect(
+        "button_press_event",
+        lambda x: resu.print_closest([x.xdata, x.ydata], vals, fig=fig),
+    )
