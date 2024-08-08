@@ -6,6 +6,7 @@ import statmorph
 import astropy
 import matplotlib.pyplot as plt
 import numpy as np
+import seg
 
 from astropy.convolution import convolve
 from astropy.stats import sigma_clipped_stats, SigmaClip
@@ -94,8 +95,9 @@ class frame:
         return convolve(data, kernel)
 
     def segment(self, data):
-        sigma_clip = SigmaClip(sigma=3.0, maxiters=10)
-        threshold = detect_threshold(data, nsigma=8.0, sigma_clip=sigma_clip)
+        #sigma_clip = SigmaClip(sigma=3.0, maxiters=10)
+        #threshold = detect_threshold(data, nsigma=8.0, sigma_clip=sigma_clip)
+        threshold = seg.find_threshold(data, seg.find_max(data))
         seg_map = detect_sources(data, threshold, 40)
         if seg_map is not None:
             return seg_map
@@ -118,12 +120,22 @@ class frame:
         else:
             print("subtracted background!")
             return data - self.bg_med
-
+    
+    def enlarge_mask(self, mask,seg_map):
+        fpm = circular_footprint(radius=10)
+        fps = circular_footprint(radius=20)
+        mask_o = SegmentationImage(mask.astype(int))
+        mask_l = mask_o.make_source_mask(footprint = fpm)
+        sm_o = SegmentationImage(seg_map)
+        sm_l = sm_o.make_source_mask(footprint = fps)
+        return (mask_l*(1-sm_l)+mask).astype(bool)
+    
     def isolate(self, seg_map):
         """Isolate the target in the segmentation map from the rest"""
         item = self.get_central(seg_map)
         seg_map_t = np.invert((seg_map - item).astype(bool)).astype(int)
         mask = (seg_map - seg_map_t * item).astype(bool)
+        mask = self.enlarge_mask(mask, seg_map_t)
         return seg_map_t, mask
 
     def get_central(self, seg_map, margin=0.6):
