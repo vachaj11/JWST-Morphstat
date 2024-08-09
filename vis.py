@@ -17,14 +17,17 @@ def rem_bad_outliers(data, sig=5):
             ind.append(i)
     ind.reverse()
     if ind:
-        print(f"found and removed the following {len(ind)} very bad (>{sig} sigma) outliers in the data:")
+        print(
+            f"found and removed the following {len(ind)} very bad (>{sig} sigma) outliers in the data:"
+        )
     for dat in data:
         for i in ind:
             if type(dat[i]) == str:
-                print(dat[i],end = ", ")
+                print(dat[i], end=", ")
             dat.pop(i)
     print()
     return data
+
 
 def plot_value(galaxies, valuex, valuey, filt="avg"):
     """plots requested values (for a given filter or averaged) for a provided set
@@ -170,7 +173,7 @@ def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt="avg"):
         if val:
             vals2.append(val)
             vals2g.append(val)
-    vals2 = rem_bad_outliers([vals2,vals2g])[0]
+    vals2 = rem_bad_outliers([vals2, vals2g])[0]
     if nbins is not None:
         count2, bins2 = np.histogram(vals2, nbins)
     else:
@@ -270,8 +273,8 @@ def plot_pic_value(galaxy, values=["C", "A", "S"]):
         axs[i + 1].set(xlabel="wavelength", ylabel=values[i])
         axs[i + 1].label_outer()
         axs[i + 1].sharex(axs[1])
-        
-        
+
+
 def plot_sersic(galsout, galsin, valueout, filt="avg"):
     """plots a sersic fitting parameter (for a given filter or
     averaged) for provided input and output set of galaxies
@@ -287,7 +290,7 @@ def plot_sersic(galsout, galsin, valueout, filt="avg"):
         "sersic_yc": "y0",
         "sersic_ellip": "q",
         "sersic_theta": "PA",
-        }
+    }
     if valueout in transcript.keys():
         valuein = transcript[valueout]
     else:

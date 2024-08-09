@@ -32,6 +32,9 @@ class galaxy:
         self.filters = filters
         self.frames = self.get_frames(self.filters, self.fitss)
         self.target_flag = self.target_test(self.frames)
+        self.update_frame_masks()
+        for f in self.frames:
+            f.calc_stmo()
 
     def get_frames(self, filters, fitss):
         """calculates frames objects from provided fits data"""
@@ -69,6 +72,36 @@ class galaxy:
         except:
             return 1
 
+    def update_frame_masks(self):
+        """checks whether the blue frames have large enough segmentation mask
+        and if not replaces their segmentation map with the average of
+        the rest
+        """
+        f_red = []
+        i_blue = []
+        for f in self.frames:
+            if int(f.name[1:-1]) <= 150:
+                i_blue.append(self.frames.index(f))
+            else:
+                f_red.append(f)
+        if len(f_red) > 0:
+            targets = [f.target for f in f_red]
+            masks = [f.mask for f in f_red]
+            t_sum = np.zeros(targets[0].shape)
+            m_sum = np.zeros(masks[0].shape)
+            for t in targets:
+                t_sum = t_sum + t
+            for m in masks:
+                m_sum = m_sum + m
+            margin = int((len(f_red) + 1) / 2)
+            t_area = np.sum(t_sum >= margin)
+            target_avg = (t_sum >= margin).astype(int)
+            mask_avg = ((m_sum >= margin) * (1 - target_avg)).astype(bool)
+            for i in i_blue:
+                if np.sum(self.frames[i].target) < t_area / 3:
+                    self.frames[i].target = target_avg
+                    self.frames[i].mask = mask_avg
+
 
 class frame:
     """class holding all data relating to a single frame/photo of a galaxy at
@@ -80,11 +113,13 @@ class frame:
         self.fits = fits
         self.data = self.fits[1].data
         self.convolved = self.convolve(self.data)
-        self.objects_seg = self.segment(self.convolved)
+        self.objects_seg, self.threshold = self.segment(self.convolved)
         self.get_background(self.objects_seg, self.data)
         self.data_sub = self.bg_subtract(self.data)
         self.target, self.mask = self.isolate(self.objects_seg)
         self.psf = self.get_psf(self.name)
+
+    def calc_stmo(self):
         self.stmo = self.get_stmo(self.data_sub, self.target, self.mask, self.psf)
 
     def convolve(self, data):
@@ -95,16 +130,17 @@ class frame:
         return convolve(data, kernel)
 
     def segment(self, data):
-        #sigma_clip = SigmaClip(sigma=3.0, maxiters=10)
-        #threshold = detect_threshold(data, nsigma=8.0, sigma_clip=sigma_clip)
-        threshold = seg.find_threshold(data, seg.find_max(data))
+        # sigma_clip = SigmaClip(sigma=3.0, maxiters=10)
+        # threshold = detect_threshold(data, nsigma=8.0, sigma_clip=sigma_clip)
+        agr = int(self.name[1:-1]) < 150
+        threshold = seg.find_threshold(data, seg.find_max(data), agr)
         seg_map = detect_sources(data, threshold, 40)
         if seg_map is not None:
-            return seg_map
+            return seg_map, threshold
         else:
             mean = np.mean(data)
             mp = (np.clip(data, None, mean) - mean).astype(bool).astype(int)
-            return SegmentationImage(mp)
+            return SegmentationImage(mp), threshold
 
     def get_background(self, seg_map, data):
         footprint = circular_footprint(radius=25)
@@ -120,16 +156,16 @@ class frame:
         else:
             print("subtracted background!")
             return data - self.bg_med
-    
-    def enlarge_mask(self, mask,seg_map):
+
+    def enlarge_mask(self, mask, seg_map):
         fpm = circular_footprint(radius=10)
         fps = circular_footprint(radius=20)
         mask_o = SegmentationImage(mask.astype(int))
-        mask_l = mask_o.make_source_mask(footprint = fpm)
+        mask_l = mask_o.make_source_mask(footprint=fpm)
         sm_o = SegmentationImage(seg_map)
-        sm_l = sm_o.make_source_mask(footprint = fps)
-        return (mask_l*(1-sm_l)+mask).astype(bool)
-    
+        sm_l = sm_o.make_source_mask(footprint=fps)
+        return (mask_l * (1 - sm_l) + mask).astype(bool)
+
     def isolate(self, seg_map):
         """Isolate the target in the segmentation map from the rest"""
         item = self.get_central(seg_map)
@@ -213,6 +249,10 @@ class frame:
         fig.tight_layout()
         plt.show()
 
-    def show_stmo(self):
+    def show_stmo(self, save_path=None):
         fig = make_figure(self.stmo)
-        plt.show()
+        if save_path is not None:
+            fig.savefig(save_path, dpi=200)
+            plt.close(fig)
+        else:
+            plt.show()

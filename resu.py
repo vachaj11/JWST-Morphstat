@@ -101,9 +101,9 @@ def json_subset(path_out, path_in, path_new):
     gal_new = get_subset(gal_out, gal_in)
     run.save_as_json({"galaxies", gal_new}, path_new)
 
+
 def get_separate_in_value(galaxies, value):
-    """separate galaxies based on requested value
-    """
+    """separate galaxies based on requested value"""
     values = {}
     for g in galaxies:
         if value in g["info"].keys():
@@ -117,8 +117,7 @@ def get_separate_in_value(galaxies, value):
         else:
             values[val] = [g]
     return values
-        
-        
+
 
 def get_filter_or_avg(galaxy, value, filt):
     """depending on provided parameter/name of filter either return value for
@@ -132,7 +131,7 @@ def get_filter_or_avg(galaxy, value, filt):
                 f = galaxy[k]
                 if type(f) == list and len(f) == len(galaxy["filters"]):
                     if type(f[i]) == dict and value in f[i].keys():
-                       val += float(f[i][value])
+                        val += float(f[i][value])
         if val:
             val = val / len(galaxy["filters"])
             return val

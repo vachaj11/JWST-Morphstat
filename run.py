@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def galaxies_data(dict_path, path_out=None, return_object=False):
+def galaxies_data(dict_path, path_out=None, return_object=False, picture_path=None):
     """Main function that computes statmorph result for an inputted
     dictionary
     """
@@ -30,6 +30,11 @@ def galaxies_data(dict_path, path_out=None, return_object=False):
         )
         if i % 10 == 0 and path_out is not None:
             save_as_json({"galaxies": galaxies}, path_out)
+        if picture_path is not None:
+            for f in gdata.frames:
+                f.show_stmo(
+                    save_path=picture_path.replace("asdf", (gdata.name + "_" + f.name))
+                )
     if path_out is not None:
         save_as_json({"galaxies": galaxies}, path_out)
     if return_object:
