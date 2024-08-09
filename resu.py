@@ -31,7 +31,7 @@ def get_bad_frames(galaxy):
     """gets indexes of bad frames in a galaxy"""
     ind = []
     for f in galaxy["frames"]:
-        if f["flag"] > 0:
+        if f["flag"] > 1 or f["_flag_seg"] > 0 or f["flag_sersic"] > 2:
             ind.append(galaxy["frames"].index(f))
     ind.reverse()
     return ind
@@ -52,7 +52,7 @@ def galaxy_pruning(galaxies):
     """
     gal_out = []
     for g in galaxies:
-        if g["misc"]["target_flag"] == 1:
+        if g["misc"]["target_flag"] >= 0:  # filter disabled
             gal_out.append(frames_pruning(g))
     return gal_out
 
@@ -92,6 +92,16 @@ def get_subset(galaxies_out, galaxies_in):
     return galaxies_sub
 
 
+def get_complement(galaxies_out, galaxies_in):
+    """get complement of '_out' galaxies that is not in the '_in' galaxies"""
+    galaxies_com = []
+    for go in galaxies_out:
+        gi = next((g for g in galaxies_in if g["name"] == go["name"]), None)
+        if gi is None:
+            galaxies_com.append(go)
+    return galaxies_com
+
+
 def json_subset(path_out, path_in, path_new):
     """from input file specifing subset of output file's galaxies create a
     subset output json
@@ -123,6 +133,8 @@ def get_filter_or_avg(galaxy, value, filt):
     """depending on provided parameter/name of filter either return value for
     the galaxy in a given filter or averaged across filters
     works for both input and output galaxy list formats
+    also if filt is of the form rfwXXX, takes XXX to be rest frame wavelength
+    and uses the closest-matching filter
     """
     if filt == "avg":
         val = 0
@@ -137,10 +149,20 @@ def get_filter_or_avg(galaxy, value, filt):
             return val
         else:
             return None
-    elif filt in galaxy["filters"]:
+    if filt[:3] == "rfw":
+        rfw = float(filt[3:])
+        filters = [int(f[1:-1]) for f in galaxy["filters"]]
+        diff = [abs(rfw - f) / f for f in filters]
+        ind = diff.index(min(diff))
+        filt = galaxy["filters"][ind]
+    if filt in galaxy["filters"]:
         i = galaxy["filters"].index(filt)
         for k in galaxy.keys():
-            if len(galaxy[k]) == len(galaxy["filters"]) and type(galaxy[k][i]) == dict:
+            if (
+                len(galaxy[k]) == len(galaxy["filters"])
+                and type(galaxy[k]) == list
+                and type(galaxy[k][i]) == dict
+            ):
                 if value in galaxy[k][i].keys():
                     return float(galaxy[k][i][value])
         return None
@@ -192,7 +214,7 @@ def print_closest(pos, data, fig=None):
         closest = data[0][2]
         distance = abs(data[0][0] - pos[0]) * wx + abs(data[0][1] - pos[1]) * wy
     else:
-        print("No data")
+        print("No data to show")
         return None
     for d in data:
         coor = [d[0] - pos[0], d[1] - pos[1]]
@@ -210,6 +232,28 @@ def get_galaxy(name):
     filj = run.fetch_json("dictionary_full.json")["galaxies"]
     gal_entry = get_galaxy_entry(filj, name)
     return run.calculate_stmo(gal_entry)
+
+
+def get_optim_rfw(galaxies):
+    """determines the optimum rest frame wavelength to be used for the
+    provided set of galaxies
+    """
+    vals = np.linspace(25, 270, num=400)
+    z = [g["info"]["ZBEST"] for g in galaxies]
+    filters = [[int(f[1:-1]) for f in g["filters"]] for g in galaxies]
+    v_best = 0
+    diff_best = len(galaxies)
+    for v in vals:
+        diff = 0
+        for i in range(len(galaxies)):
+            v_r = v * (1 + z[i])
+            diffs = [abs(v_r - v_i) / v_i for v_i in filters[i]]
+            if len(diffs) > 0:
+                diff += min(diffs)
+        if diff < diff_best:
+            v_best = v
+            diff_best = diff
+    return v_best
 
 
 # gf = lambda name: run.calculate_stmo(resu.get_galaxy_entry(run.fetch_json("dictionary_full.json")["galaxies"],name))

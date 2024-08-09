@@ -2,6 +2,7 @@
 statmorph computation
 """
 
+import warnings
 import json
 import astropy
 import stmo
@@ -70,7 +71,7 @@ def get_fitss(galaxy):
             fitss.append(astropy.io.fits.open(path))
             filters.append(galaxy["filters"][l])
         except:
-            print("Couldn't locate " + path)
+            warnings.warn(f"Couldn't locate {path}.")
     return filters, fitss
 
 
@@ -167,5 +168,6 @@ def get_frame_data(frame):
         "_bg_mean": float(frame.bg_mean),
         "_bg_median": float(frame.bg_med),
         "_bg_std": float(frame.bg_std),
+        "_flag_seg": int(frame.flag_seg),
     }
     return data

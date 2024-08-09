@@ -2,6 +2,7 @@
 statmorph computation, testing of the results, etc
 """
 
+import warnings
 import statmorph
 import astropy
 import matplotlib.pyplot as plt
@@ -33,6 +34,7 @@ class galaxy:
         self.frames = self.get_frames(self.filters, self.fitss)
         self.target_flag = self.target_test(self.frames)
         self.update_frame_masks()
+        self.flag_targets()
         for f in self.frames:
             f.calc_stmo()
 
@@ -44,7 +46,9 @@ class galaxy:
                 frames.append(frame(filters[i], fitss[i]))
             return frames
         else:
-            print("number of frames not matching the number of filters")
+            warnings.warn(
+                f"Number of frames not matching the number of filters for galaxy {self.name}."
+            )
             return []
 
     def target_test(self, frames):
@@ -59,13 +63,13 @@ class galaxy:
                 t2_size = np.sum(target2)
                 ol_size = np.sum(overlap)
                 if ol_size < 0.5 * min(t1_size, t2_size):
-                    print(
-                        f"targets in {self.name} frames {frames[i+1].name} and {frames[i].name} non-ovelapping"
+                    warnings.warn(
+                        f"Targets in {self.name} frames {frames[i+1].name} and {frames[i].name} non-ovelapping."
                     )
                     return 3
                 if ol_size < 0.5 * max(t1_size, t2_size):
-                    print(
-                        f"targets in {self.name} frames {frames[i+1].name} and {frames[i].name} suspiciously different"
+                    warnings.warn(
+                        f"Targets in {self.name} frames {frames[i+1].name} and {frames[i].name} suspiciously different."
                     )
                     return 2
             return 0
@@ -80,7 +84,7 @@ class galaxy:
         f_red = []
         i_blue = []
         for f in self.frames:
-            if int(f.name[1:-1]) <= 150:
+            if int(f.name[1:-1]) < 200:
                 i_blue.append(self.frames.index(f))
             else:
                 f_red.append(f)
@@ -98,9 +102,29 @@ class galaxy:
             target_avg = (t_sum >= margin).astype(int)
             mask_avg = ((m_sum >= margin) * (1 - target_avg)).astype(bool)
             for i in i_blue:
-                if np.sum(self.frames[i].target) < t_area / 3:
+                f_area = np.sum(self.frames[i].target)
+                if f_area * 3 < t_area or f_area > t_area * 2:
                     self.frames[i].target = target_avg
                     self.frames[i].mask = mask_avg
+
+    def flag_targets(self):
+        """for each of the frames determines whether its target segmentation
+        map is comparable to the others and flags outliers
+        """
+        targets = [f.target for f in self.frames]
+        t_sum = np.zeros(targets[0].shape)
+        margin = int((len(targets) + 1) / 2)
+        for t in targets:
+            t_sum = t_sum + t
+        target_avg = (t_sum >= margin).astype(int)
+        t_area = np.sum(target_avg)
+        for i in range(len(self.frames)):
+            target = self.frames[i].target
+            overlap = np.sum(target * target_avg)
+            if overlap * 3 < t_area or overlap * 4 < np.sum(target):
+                self.frames[i].flag_seg = 1
+            else:
+                self.frames[i].flag_seg = 0
 
 
 class frame:
@@ -151,10 +175,10 @@ class frame:
         )
 
     def bg_subtract(self, data):
-        if self.bg_std > 0.5 * self.bg_med:
+        if self.bg_std > 0.1 * self.bg_med:
             return data
         else:
-            print("subtracted background!")
+            warnings.warn("Subtracted background!")
             return data - self.bg_med
 
     def enlarge_mask(self, mask, seg_map):
@@ -210,7 +234,7 @@ class frame:
             psf = astropy.io.fits.open(path)[0].data
             return psf
         except:
-            print(f"haven't found psf for filter {name}")
+            warnings.warn(f"Haven't found psf for filter {name}.")
             return None
 
     def show_seg(self):

@@ -1,6 +1,7 @@
 """various methods for visualisation of the results
 """
 
+import warnings
 import matplotlib.pyplot as plt
 import matplotlib.image as mpi
 import numpy as np
@@ -17,7 +18,7 @@ def rem_bad_outliers(data, sig=5):
             ind.append(i)
     ind.reverse()
     if ind:
-        print(
+        warnings.warn(
             f"found and removed the following {len(ind)} very bad (>{sig} sigma) outliers in the data:"
         )
     for dat in data:
@@ -25,7 +26,8 @@ def rem_bad_outliers(data, sig=5):
             if type(dat[i]) == str:
                 print(dat[i], end=", ")
             dat.pop(i)
-    print()
+    if ind:
+        print()
     return data
 
 
@@ -150,7 +152,7 @@ def plot_histogram(galaxies, value, nbins=None, filt="avg"):
         plt.stairs(count / len(vals), bins, label=f"({len(vals)})")
 
 
-def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt="avg"):
+def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt="avg", pdf=False):
     """plots a joint histogram of requested value (for a given filter or
     averaged) for given two sets of galaxies
     """
@@ -178,12 +180,15 @@ def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt="avg"):
         count2, bins2 = np.histogram(vals2, nbins)
     else:
         count2, bins2 = np.histogram(vals2)
+    if pdf:
+        count1 = count1 / (len(vals1) * (bins1[1] - bins1[0]))
+        count2 = count2 / (len(vals2) * (bins2[1] - bins2[0]))
     if filt:
-        plt.stairs(count1 / len(vals1), bins1, label=f"filter {filt} ({len(vals1)})")
-        plt.stairs(count2 / len(vals2), bins2, label=f"filter {filt} ({len(vals2)})")
+        plt.stairs(count1, bins1, label=f"filter {filt} ({len(vals1)})")
+        plt.stairs(count2, bins2, label=f"filter {filt} ({len(vals2)})")
     else:
-        plt.stairs(count1 / len(vals1), bins1, label=f"({len(vals1)})")
-        plt.stairs(count2 / len(vals2), bins2, label=f"({len(vals2)})")
+        plt.stairs(count1, bins1, label=f"({len(vals1)})")
+        plt.stairs(count2, bins2, label=f"({len(vals2)})")
     plt.title(f"Histogram comparison of {value}")
     plt.legend()
 
@@ -200,7 +205,7 @@ def plot_value_filters(galaxies, valuex, valuey, filt=2):
     elif type(filt) == str and filt == "avg":
         filts = ["avg"]
     else:
-        print("unrecognised type of filt: " + str(type(filt)))
+        warnings.warn(f"Unrecognised type of filt: {type(filt)}.")
     for filt in filts:
         vals.extend(plot_value(galaxies, valuex, valuey, filt=filt))
     fig = plt.gcf()
@@ -221,7 +226,7 @@ def plot_correlation_filters(galaxies, valuex, valuey, filt=2):
     elif type(filt) == str and filt == "avg":
         filts = ["avg"]
     else:
-        print("unrecognised type of filt: " + str(type(filt)))
+        warnings.warn(f"Unrecognised type of filt: {type(filt)}.")
     for filt in filts:
         vals.extend(plot_correlation(galaxies, valuex, valuey, filt=filt))
     fig = plt.gcf()
@@ -231,7 +236,7 @@ def plot_correlation_filters(galaxies, valuex, valuey, filt=2):
     )
 
 
-def plot_histogram_filters(galaxies, value, filt=2):
+def plot_histogram_filters(galaxies, value, filt=2, pdf=False):
     """plots histograms of requested value for a given set of galaxies across
     multiple filters
     """
@@ -242,9 +247,9 @@ def plot_histogram_filters(galaxies, value, filt=2):
     elif type(filt) == str and filt == "avg":
         filts = ["avg"]
     else:
-        print("unrecognised type of filt: " + str(type(filt)))
+        warnings.warn(f"Unrecognised type of filt: {type(filt)}.")
     for filt in filts:
-        plot_histogram(galaxies, value, filt=filt)
+        plot_histogram(galaxies, value, filt=filt, pdf=pdf)
     plt.title(f"Histogram of {value}")
 
 

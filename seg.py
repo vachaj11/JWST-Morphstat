@@ -1,6 +1,7 @@
 """methods for creation of better segmentation map
 """
 
+import warnings
 import json
 import astropy
 import time
@@ -51,7 +52,7 @@ def find_max(data, start=None):
     else:
         pos = (int(data.shape[0] / 2), int(data.shape[1] / 2))
     if data[pos] == 0:
-        print("found suspicious values when searching for peak")
+        warnings.warn("found suspicious values when searching for peak")
         data = convolution(data, 10)
     while not maxed:
         pos_n = highest_neighbour(data, pos)
@@ -191,7 +192,7 @@ def area_within(data, pos_o, thresh):
         bl[pos_o] = 1
         return bl
     elif not seg.data[pos_o]:
-        print("using legacy")
+        warnings.warn("using legacy area calculation")
         return area_within_legacy(data, pos_o, thresh)
     else:
         sd = seg.data
