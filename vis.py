@@ -164,8 +164,8 @@ def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt="avg", pdf=Fals
         val = resu.get_filter_or_avg(g, value, filt)
         if val:
             vals1.append(val)
-            vals1g.append(g)
-    vals1 = rem_bad_outliers([vals1, val1g])[0]
+            vals1g.append(g["name"])
+    vals1 = rem_bad_outliers([vals1, vals1g])[0]
     if nbins is not None:
         count1, bins1 = np.histogram(vals1, nbins)
     else:
@@ -174,7 +174,7 @@ def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt="avg", pdf=Fals
         val = resu.get_filter_or_avg(g, value, filt)
         if val:
             vals2.append(val)
-            vals2g.append(val)
+            vals2g.append(g["name"])
     vals2 = rem_bad_outliers([vals2, vals2g])[0]
     if nbins is not None:
         count2, bins2 = np.histogram(vals2, nbins)
@@ -189,7 +189,10 @@ def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt="avg", pdf=Fals
     else:
         plt.stairs(count1, bins1, label=f"({len(vals1)})")
         plt.stairs(count2, bins2, label=f"({len(vals2)})")
-    plt.title(f"Histogram comparison of {value}")
+    if not pdf:
+        plt.title(f"Histogram comparison of {value}")
+    else:
+        plt.title(f"Approximate distribution comparison of {value}")
     plt.legend()
 
 

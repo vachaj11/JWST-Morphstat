@@ -7,7 +7,7 @@ import statmorph
 import astropy
 import matplotlib.pyplot as plt
 import numpy as np
-import seg
+import seg, psfm
 
 from astropy.convolution import convolve
 from astropy.stats import sigma_clipped_stats, SigmaClip
@@ -26,14 +26,21 @@ class galaxy:
     different filters and corresponding methods
     """
 
-    def __init__(self, name, info, filters, fitss):
+    def __init__(self, name, info, filters, fitss, psf_res=None):
         self.fitss = fitss
         self.info = info
         self.name = name
         self.filters = filters
+        self.pixel_size = psfm.get_pixel_size(self.info["ZBEST"])
         self.frames = self.get_frames(self.filters, self.fitss)
+        if psf_res is not None:
+            for f in self.frames:
+                f.adjust_resolution(psf_res / self.pixel_size)
+        for f in self.frames:
+            f.calc_frames()
         self.target_flag = self.target_test(self.frames)
-        self.update_frame_masks()
+        if psf_res is None:
+            self.update_frame_masks()
         self.flag_targets()
         for f in self.frames:
             f.calc_stmo()
@@ -136,15 +143,37 @@ class frame:
         self.name = name
         self.fits = fits
         self.data = self.fits[1].data
+        self.psf = self.get_psf(self.name)
+        self.adjusted = False
+
+    def calc_frames(self):
         self.convolved = self.convolve(self.data)
-        self.objects_seg, self.threshold = self.segment(self.convolved)
+        self.objects_seg, self.threshold, self.cmax = self.segment(self.convolved)
         self.get_background(self.objects_seg, self.data)
         self.data_sub = self.bg_subtract(self.data)
-        self.target, self.mask = self.isolate(self.objects_seg)
-        self.psf = self.get_psf(self.name)
+        self.target, self.mask = self.isolate(self.objects_seg, self.cmax)
+        self.flag_corr = self.get_corr_flag(self.data)
 
     def calc_stmo(self):
         self.stmo = self.get_stmo(self.data_sub, self.target, self.mask, self.psf)
+
+    def adjust_resolution(self, fin_std):
+        if self.psf is not None:
+            stds = psfm.get_psf_std(self.psf)
+            std_s = np.sum(stds) / 2
+            if fin_std >= std_s:
+                conv_std = np.sqrt(fin_std**2 - std_s**2)
+                self.data = psfm.convolve_std(self.data, conv_std)
+                self.psf = psfm.convolve_std(self.psf, conv_std)
+                self.adjusted = True
+            else:
+                warnings.warn(
+                    f"Resolution of frame {self.name} is already lower than requested."
+                )
+        else:
+            warnings.warn(
+                f"Cannot adjust resolution of frame {self.name}, as it doesn't have a psf."
+            )
 
     def convolve(self, data):
         dim = min(data.shape)
@@ -156,18 +185,19 @@ class frame:
     def segment(self, data):
         # sigma_clip = SigmaClip(sigma=3.0, maxiters=10)
         # threshold = detect_threshold(data, nsigma=8.0, sigma_clip=sigma_clip)
-        agr = int(self.name[1:-1]) < 150
-        threshold = seg.find_threshold(data, seg.find_max(data), agr)
+        agr = int(self.name[1:-1]) < 150 and not self.adjusted
+        cmax = seg.find_max(data)
+        threshold = seg.find_threshold(data, cmax, agr)
         seg_map = detect_sources(data, threshold, 40)
         if seg_map is not None:
-            return seg_map, threshold
+            return seg_map, threshold, cmax
         else:
             mean = np.mean(data)
             mp = (np.clip(data, None, mean) - mean).astype(bool).astype(int)
-            return SegmentationImage(mp), threshold
+            return SegmentationImage(mp), threshold, cmax
 
     def get_background(self, seg_map, data):
-        footprint = circular_footprint(radius=25)
+        footprint = circular_footprint(radius=15)
         self.bg_mask = seg_map.make_source_mask(footprint=footprint)
         self.background = data * (1 - self.bg_mask)
         self.bg_mean, self.bg_med, self.bg_std = sigma_clipped_stats(
@@ -190,16 +220,18 @@ class frame:
         sm_l = sm_o.make_source_mask(footprint=fps)
         return (mask_l * (1 - sm_l) + mask).astype(bool)
 
-    def isolate(self, seg_map):
+    def isolate(self, seg_map, pos):
         """Isolate the target in the segmentation map from the rest"""
-        item = self.get_central(seg_map)
+        item = self.get_central(seg_map, pos)
         seg_map_t = np.invert((seg_map - item).astype(bool)).astype(int)
         mask = (seg_map - seg_map_t * item).astype(bool)
         mask = self.enlarge_mask(mask, seg_map_t)
         return seg_map_t, mask
 
-    def get_central(self, seg_map, margin=0.6):
+    def get_central(self, seg_map, pos=None, margin=0.6):
         """Get the index of the most central target in the segmentation map"""
+        if pos is not None and seg_map.data[pos] > 0:
+            return seg_map.data[pos]
         members = self.get_members(seg_map)
         sx, sy = seg_map.shape
         cx = int(sx / 2)
@@ -236,6 +268,16 @@ class frame:
         except:
             warnings.warn(f"Haven't found psf for filter {name}.")
             return None
+
+    def get_corr_flag(self, data):
+        zeros = np.sum(data == 0.0)
+        total = np.prod(data.shape)
+        if zeros > 0.75 * total:
+            return 2
+        elif zeros > 0.5 * total:
+            return 1
+        else:
+            return 0
 
     def show_seg(self):
         fig, axs = plt.subplots(2, 4)
@@ -274,9 +316,20 @@ class frame:
         plt.show()
 
     def show_stmo(self, save_path=None):
-        fig = make_figure(self.stmo)
-        if save_path is not None:
-            fig.savefig(save_path, dpi=200)
-            plt.close(fig)
-        else:
-            plt.show()
+        try:
+            fig = make_figure(self.stmo)
+            if save_path is not None:
+                fig.savefig(save_path, dpi=200)
+                plt.close(fig)
+            else:
+                plt.show()
+        except:
+            warnings.warn("Couldn't get the output image due to catastrophic flag.")
+
+    def show_bg(self):
+        b = np.copy(self.background)
+        rangev = (b.min(), b.max())
+        b[b == 0.0] = -1000000
+        counts, bins = np.histogram(b, range=rangev)
+        plt.stairs(counts, bins)
+        plt.show()

@@ -2,6 +2,7 @@
 """
 
 import warnings
+import time
 import json
 import astropy
 import time
@@ -38,7 +39,7 @@ def highest_neighbour(data, pos):
         pos_n_y = pos[1] + maxind[1] - 1
         return (pos_n_x, pos_n_y)
     except ValueError:
-        print("finding image peak escaped image boundaries")
+        warnings.warn("Finding image peak escaped image boundaries.")
         return pos
 
 
@@ -70,6 +71,8 @@ def get_thresholds(data, maxv, n=1000):
     sort = np.sort(flat)[::-1]
     max_ind = np.argmax(sort < maxv)
     incr = (len(sort) / 3 - max(max_ind, len(sort) / 250)) / n
+    if incr < 0:
+        incr = (len(sort) - max_ind - 1) / n
     thrs = []
     for i in range(n - 1):
         thrs.append(sort[max_ind + int(i * incr)])
@@ -102,7 +105,7 @@ def next_pos(data, pos, thresh, direc):
     bigger = {}
     for k in poss:
         if 0 <= poss[k][0] < shape[0] and 0 <= poss[k][1] < shape[1]:
-            bigger[k] = data[poss[k]] > thresh
+            bigger[k] = data[poss[k]] >= thresh
         else:
             bigger[k] = False
     for i in range(4):
@@ -169,6 +172,7 @@ def area_within_legacy(data, pos_o, thresh):
     enclosed = False
     pos = pos_o
     while not enclosed:
+        time.sleep(1)
         pos0 = find_edge(data, pos, thresh)
         edge = get_edge(data, pos0, thresh)
         edge_a = area_from_inds(data.shape, edge)
@@ -186,6 +190,8 @@ def area_within(data, pos_o, thresh):
     """gets area falling within a given threshold and including the
     provided point; uses photutils so much faster than the above
     """
+    if data[pos_o] < thresh:
+        raise Exception("Value at a specified target position is bellow threshold.")
     seg = detect_sources(data, thresh, 1)
     if seg is None:
         bl = np.zeros(data.shape)

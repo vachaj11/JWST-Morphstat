@@ -31,7 +31,12 @@ def get_bad_frames(galaxy):
     """gets indexes of bad frames in a galaxy"""
     ind = []
     for f in galaxy["frames"]:
-        if f["flag"] > 1 or f["_flag_seg"] > 0 or f["flag_sersic"] > 2:
+        if (
+            f["flag"] > 1
+            or f["_flag_seg"] > 0
+            or f["flag_sersic"] > 2
+            or not f["_psf_used"]
+        ):
             ind.append(galaxy["frames"].index(f))
     ind.reverse()
     return ind
@@ -53,7 +58,9 @@ def galaxy_pruning(galaxies):
     gal_out = []
     for g in galaxies:
         if g["misc"]["target_flag"] >= 0:  # filter disabled
-            gal_out.append(frames_pruning(g))
+            gp = frames_pruning(g)
+            if len(gp["filters"]) > 0:
+                gal_out.append(gp)
     return gal_out
 
 
@@ -254,6 +261,3 @@ def get_optim_rfw(galaxies):
             v_best = v
             diff_best = diff
     return v_best
-
-
-# gf = lambda name: run.calculate_stmo(resu.get_galaxy_entry(run.fetch_json("dictionary_full.json")["galaxies"],name))

@@ -165,9 +165,11 @@ def get_frame_data(frame):
         "_target_size": int(frame.target.sum()),
         "_subtracted": not np.array_equal(frame.data, frame.data_sub),
         "_psf_used": frame.psf is not None,
+        "_adjusted": frame.adjusted,
         "_bg_mean": float(frame.bg_mean),
         "_bg_median": float(frame.bg_med),
         "_bg_std": float(frame.bg_std),
         "_flag_seg": int(frame.flag_seg),
+        "_flag_corr": int(frame.flag_corr),
     }
     return data
