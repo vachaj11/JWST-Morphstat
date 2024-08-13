@@ -2,10 +2,12 @@
 """
 
 import json
+
 import matplotlib.pyplot as plt
 import numpy as np
-import run
+
 import psfm
+import run
 
 
 def get_galaxy_entry(galaxies_full, gal_name, fil_names=None):
@@ -34,8 +36,9 @@ def get_bad_frames(galaxy):
     for f in galaxy["frames"]:
         if (
             f["flag"] > 1
-            or f["_flag_seg"] > 0
             or f["flag_sersic"] > 2
+            or f["_flag_seg"] > 0
+            or f["_flag_corr"] > 2
             or not f["_psf_used"]
         ):
             ind.append(galaxy["frames"].index(f))
@@ -233,16 +236,16 @@ def print_closest(pos, data, fig=None):
     print(closest)
 
 
-def get_galaxy(name):
+def get_galaxy(name, psf_res=None):
     """find galaxy of a given name and calculate stmo for it returning full
     results object
     """
     filj = run.fetch_json("dictionary_full.json")["galaxies"]
     gal_entry = get_galaxy_entry(filj, name)
-    return run.calculate_stmo(gal_entry)
+    return run.calculate_stmo(gal_entry, psf_res=psf_res)
 
 
-def get_optim_rfw(galaxies, return_filtered = False):
+def get_optim_rfw(galaxies, return_filtered=False):
     """determines the optimum rest frame wavelength to be used for the
     provided set of galaxies
     """
@@ -269,7 +272,7 @@ def get_optim_rfw(galaxies, return_filtered = False):
                     else:
                         gal[k] = gi[k]
                 gals.append(gal)
-                    
+
         if diff < diff_best:
             v_best = v
             diff_best = diff
@@ -278,18 +281,19 @@ def get_optim_rfw(galaxies, return_filtered = False):
         return v_best, gals_best
     else:
         return v_best
-        
+
+
 def get_maximal_std_distance(galaxies):
     """Determines the maximal std (in lyr) of psf present in the given set
     of galaxies.
     """
-    max_std = 0.
+    max_std = 0.0
     for g in galaxies:
         px_size = psfm.get_pixel_size(g["info"]["ZBEST"])
         for f in g["filters"]:
             psf_stds_px = psfm.get_psf_std(f)
             if psf_stds_px is not None:
-                psf_std_px = np.sum(psf_stds_px)/2
-                psf_std = px_size*psf_std_px
+                psf_std_px = np.sum(psf_stds_px) / 2
+                psf_std = px_size * psf_std_px
                 max_std = max(psf_std, max_std)
     return max_std

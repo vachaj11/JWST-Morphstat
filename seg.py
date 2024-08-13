@@ -1,20 +1,19 @@
 """methods for creation of better segmentation map
 """
 
-import warnings
-import time
 import json
-import astropy
 import time
+import warnings
+
+import astropy
 import matplotlib.pyplot as plt
 import numpy as np
-
 from astropy.convolution import convolve
 from photutils.segmentation import (
-    make_2dgaussian_kernel,
+    SegmentationImage,
     detect_sources,
     detect_threshold,
-    SegmentationImage,
+    make_2dgaussian_kernel,
 )
 from photutils.utils import circular_footprint
 

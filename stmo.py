@@ -3,22 +3,24 @@ statmorph computation, testing of the results, etc
 """
 
 import warnings
-import statmorph
+
 import astropy
 import matplotlib.pyplot as plt
 import numpy as np
-import seg, psfm
-
+import statmorph
 from astropy.convolution import convolve
-from astropy.stats import sigma_clipped_stats, SigmaClip
+from astropy.stats import SigmaClip, sigma_clipped_stats
 from photutils.segmentation import (
-    make_2dgaussian_kernel,
+    SegmentationImage,
     detect_sources,
     detect_threshold,
-    SegmentationImage,
+    make_2dgaussian_kernel,
 )
 from photutils.utils import circular_footprint
 from statmorph.utils.image_diagnostics import make_figure
+
+import psfm
+import seg
 
 
 class galaxy:
@@ -142,7 +144,7 @@ class frame:
     def __init__(self, name, fits):
         self.name = name
         self.fits = fits
-        self.data = self.fits[1].data
+        self.data = self.fits[0].data
         self.psf = self.get_psf(self.name)
         self.adjustment = None
 
@@ -272,9 +274,11 @@ class frame:
     def get_corr_flag(self, data):
         zeros = np.sum(data == 0.0)
         total = np.prod(data.shape)
-        if zeros > 0.75 * total:
-            return 2
+        if zeros > 0.8 * total:
+            return 3
         elif zeros > 0.5 * total:
+            return 2
+        elif zeros > 0.1 * total:
             return 1
         else:
             return 0

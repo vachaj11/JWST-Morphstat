@@ -2,9 +2,11 @@
 """
 
 import warnings
-import matplotlib.pyplot as plt
+
 import matplotlib.image as mpi
+import matplotlib.pyplot as plt
 import numpy as np
+
 import resu
 
 

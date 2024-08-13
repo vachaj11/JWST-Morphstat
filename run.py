@@ -2,16 +2,20 @@
 statmorph computation
 """
 
-import warnings
 import json
-import astropy
-import stmo
 import time
+import warnings
+
+import astropy
 import matplotlib.pyplot as plt
 import numpy as np
 
+import stmo
 
-def galaxies_data(gals, path_out=None, return_object=False, picture_path=None, psf_res = None):
+
+def galaxies_data(
+    gals, path_out=None, return_object=False, picture_path=None, psf_res=None
+):
     """Main function that computes statmorph result for an inputted
     dictionary
     """
@@ -43,18 +47,18 @@ def galaxies_data(gals, path_out=None, return_object=False, picture_path=None, p
         return galaxies
 
 
-def calculate_stmo(galaxy, psf_res):
+def calculate_stmo(galaxy, psf_res=None):
     """Runs statmorph and returns stmo.galaxy object for the given galaxy"""
     info = galaxy["info"]
     name = galaxy["name"]
     filters, fitss = get_fitss(galaxy)
-    gdata = stmo.galaxy(name, info, filters, fitss, psf_res = psf_res)
+    gdata = stmo.galaxy(name, info, filters, fitss, psf_res=psf_res)
     return gdata
 
 
 def adhoc_path(path):
     """ad-hoc modifies the path to file according to current setup"""
-    p = "../galfit_results/" + path[:-4]
+    p = "../MP_cutouts/out/galfit_results/" + path[:-4]
     p = p.replace("big/", "big/results_")
     p = p.replace("small/", "small/results_")
     return p
@@ -164,7 +168,11 @@ def get_frame_data(frame):
         "_target_size": int(frame.target.sum()),
         "_subtracted": not np.array_equal(frame.data, frame.data_sub),
         "_psf_used": frame.psf is not None,
-        "_adjustment": float(frame.adjustment) if frame.adjustment is not None else frame.adjustment,
+        "_adjustment": (
+            float(frame.adjustment)
+            if frame.adjustment is not None
+            else frame.adjustment
+        ),
         "_bg_mean": float(frame.bg_mean),
         "_bg_median": float(frame.bg_med),
         "_bg_std": float(frame.bg_std),

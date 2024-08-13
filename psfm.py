@@ -1,13 +1,13 @@
 """methods for adjusting resolution of frames
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
 import warnings
 
-from astropy.modeling import models, fitting
-from astropy.convolution import convolve, Gaussian2DKernel
+import matplotlib.pyplot as plt
+import numpy as np
+from astropy.convolution import Gaussian2DKernel, convolve
 from astropy.cosmology import LambdaCDM
+from astropy.modeling import fitting, models
 
 # cosmological parameters from Planck 2018
 H0 = 67.49
@@ -16,13 +16,13 @@ Od0 = 0.6847
 
 # astropy cosmology
 cosm = LambdaCDM(H0, Om0, Od0)
-    
+
 # angular pixel size in radians
 sc = 0.025 / 3600 / 180 * np.pi
 
 # pre-calculated stds for the filters
 calculated_stds = {
-    'F090W': (0.5094135710972533, 0.48798589051061103),
+    "F090W": (0.5094135710972533, 0.48798589051061103),
     "F115W": (0.6245571765839361, 0.6391595055066647),
     "F150W": (0.8278315754120771, 0.8064850690050779),
     "F182M": (0.9870815704870342, 1.0087911840098556),
@@ -40,7 +40,7 @@ calculated_stds = {
 }
 
 
-def get_psf_std(name, psf = None, show_fit = False):
+def get_psf_std(name, psf=None, show_fit=False):
     """get the standard deviation of the provided gaussian-like psf"""
     if name in calculated_stds.keys():
         stds = calculated_stds[name]
@@ -54,10 +54,10 @@ def get_psf_std(name, psf = None, show_fit = False):
         y_std = result.y_stddev.value
         stds = (x_std, y_std)
         if show_fit:
-            plt.imshow(result(x,y)-psf)
+            plt.imshow(result(x, y) - psf)
             plt.show()
-            plt.plot(range(x.max()+1),result(x,y)[int(y.max()/2)])
-            plt.plot(range(x.max()+1),psf[int(y.max()/2)])
+            plt.plot(range(x.max() + 1), result(x, y)[int(y.max() / 2)])
+            plt.plot(range(x.max() + 1), psf[int(y.max() / 2)])
             plt.show()
     else:
         warnings.warn(f"Could not determine psf size for {name}. Returning None.")
