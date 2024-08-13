@@ -144,7 +144,7 @@ class frame:
         self.fits = fits
         self.data = self.fits[1].data
         self.psf = self.get_psf(self.name)
-        self.adjusted = False
+        self.adjustment = None
 
     def calc_frames(self):
         self.convolved = self.convolve(self.data)
@@ -159,13 +159,13 @@ class frame:
 
     def adjust_resolution(self, fin_std):
         if self.psf is not None:
-            stds = psfm.get_psf_std(self.psf)
+            stds = psfm.get_psf_std(self.name, self.psf)
             std_s = np.sum(stds) / 2
             if fin_std >= std_s:
                 conv_std = np.sqrt(fin_std**2 - std_s**2)
                 self.data = psfm.convolve_std(self.data, conv_std)
                 self.psf = psfm.convolve_std(self.psf, conv_std)
-                self.adjusted = True
+                self.adjustment = fin_std
             else:
                 warnings.warn(
                     f"Resolution of frame {self.name} is already lower than requested."
@@ -185,7 +185,7 @@ class frame:
     def segment(self, data):
         # sigma_clip = SigmaClip(sigma=3.0, maxiters=10)
         # threshold = detect_threshold(data, nsigma=8.0, sigma_clip=sigma_clip)
-        agr = int(self.name[1:-1]) < 150 and not self.adjusted
+        agr = int(self.name[1:-1]) < 150 and not self.adjustment
         cmax = seg.find_max(data)
         threshold = seg.find_threshold(data, cmax, agr)
         seg_map = detect_sources(data, threshold, 40)

@@ -5,6 +5,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 import run
+import psfm
 
 
 def get_galaxy_entry(galaxies_full, gal_name, fil_names=None):
@@ -241,7 +242,7 @@ def get_galaxy(name):
     return run.calculate_stmo(gal_entry)
 
 
-def get_optim_rfw(galaxies):
+def get_optim_rfw(galaxies, return_filtered = False):
     """determines the optimum rest frame wavelength to be used for the
     provided set of galaxies
     """
@@ -250,14 +251,45 @@ def get_optim_rfw(galaxies):
     filters = [[int(f[1:-1]) for f in g["filters"]] for g in galaxies]
     v_best = 0
     diff_best = len(galaxies)
+    gals_best = []
     for v in vals:
         diff = 0
+        gals = []
         for i in range(len(galaxies)):
             v_r = v * (1 + z[i])
             diffs = [abs(v_r - v_i) / v_i for v_i in filters[i]]
             if len(diffs) > 0:
-                diff += min(diffs)
+                ind = diffs.index(min(diffs))
+                diff += diffs[ind]
+                gal = dict()
+                gi = galaxies[i]
+                for k in galaxies[i]:
+                    if type(gi[k]) == list and len(gi[k]) == len(diffs):
+                        gal[k] = [gi[k][ind]]
+                    else:
+                        gal[k] = gi[k]
+                gals.append(gal)
+                    
         if diff < diff_best:
             v_best = v
             diff_best = diff
-    return v_best
+            gals_best = gals
+    if return_filtered:
+        return v_best, gals_best
+    else:
+        return v_best
+        
+def get_maximal_std_distance(galaxies):
+    """Determines the maximal std (in lyr) of psf present in the given set
+    of galaxies.
+    """
+    max_std = 0.
+    for g in galaxies:
+        px_size = psfm.get_pixel_size(g["info"]["ZBEST"])
+        for f in g["filters"]:
+            psf_stds_px = psfm.get_psf_std(f)
+            if psf_stds_px is not None:
+                psf_std_px = np.sum(psf_stds_px)/2
+                psf_std = px_size*psf_std_px
+                max_std = max(psf_std, max_std)
+    return max_std

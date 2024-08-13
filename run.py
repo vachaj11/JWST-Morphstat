@@ -11,22 +11,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def galaxies_data(dict_path, path_out=None, return_object=False, picture_path=None):
+def galaxies_data(gals, path_out=None, return_object=False, picture_path=None, psf_res = None):
     """Main function that computes statmorph result for an inputted
     dictionary
     """
     t0 = time.time()
-    x = fetch_json(dict_path)
     galaxies = []
     objects = []
-    for i in range(len(x["galaxies"])):
-        gdata = calculate_stmo(x["galaxies"][i])
+    for i in range(len(gals)):
+        gdata = calculate_stmo(gals[i], psf_res)
         galaxies.append(get_galaxy_data(gdata))
         if return_object:
             objects.append(gdata)
         print(
             "Finished galaxy {} in {:.2f} s ({} out of {})".format(
-                galaxies[-1]["name"], time.time() - t0, i + 1, len(x["galaxies"])
+                galaxies[-1]["name"], time.time() - t0, i + 1, len(gals)
             )
         )
         if i % 10 == 0 and path_out is not None:
@@ -44,12 +43,12 @@ def galaxies_data(dict_path, path_out=None, return_object=False, picture_path=No
         return galaxies
 
 
-def calculate_stmo(galaxy):
+def calculate_stmo(galaxy, psf_res):
     """Runs statmorph and returns stmo.galaxy object for the given galaxy"""
     info = galaxy["info"]
     name = galaxy["name"]
     filters, fitss = get_fitss(galaxy)
-    gdata = stmo.galaxy(name, info, filters, fitss)
+    gdata = stmo.galaxy(name, info, filters, fitss, psf_res = psf_res)
     return gdata
 
 
@@ -165,7 +164,7 @@ def get_frame_data(frame):
         "_target_size": int(frame.target.sum()),
         "_subtracted": not np.array_equal(frame.data, frame.data_sub),
         "_psf_used": frame.psf is not None,
-        "_adjusted": frame.adjusted,
+        "_adjustment": float(frame.adjustment) if frame.adjustment is not None else frame.adjustment,
         "_bg_mean": float(frame.bg_mean),
         "_bg_median": float(frame.bg_med),
         "_bg_std": float(frame.bg_std),
