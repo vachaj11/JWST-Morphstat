@@ -2,9 +2,12 @@
 """
 
 import json
+import copy
 
 import matplotlib.pyplot as plt
+import matplotlib.image as mpi
 import numpy as np
+import cv2
 
 import psfm
 import run
@@ -30,11 +33,11 @@ def get_galaxy_entry(galaxies_full, gal_name, fil_names=None):
     return None
 
 
-def get_bad_frames(galaxy):
+def get_bad_frames(galaxy, strength="normal"):
     """gets indexes of bad frames in a galaxy"""
     ind = []
     for f in galaxy["frames"]:
-        if (
+        if strength == "normal" and (
             f["flag"] > 1
             or f["flag_sersic"] > 2
             or f["_flag_seg"] > 0
@@ -42,27 +45,52 @@ def get_bad_frames(galaxy):
             or not f["_psf_used"]
         ):
             ind.append(galaxy["frames"].index(f))
+        elif strength == "strict" and (
+            f["flag"] > 0
+            or f["flag_sersic"] > 1
+            or f["_flag_seg"] > 0
+            or f["_flag_corr"] > 1
+            or not f["_psf_used"]
+        ):
+            ind.append(galaxy["frames"].index(f))
+        elif strength == "sersic" and (
+            f["flag"] > 2
+            or f["flag_sersic"] > 0
+            or f["_flag_corr"] > 2
+            or not f["_psf_used"]
+        ):
+            ind.append(galaxy["frames"].index(f))
+        elif strength == "light" and (
+            f["flag"] > 2 or f["_flag_corr"] > 2 or not f["_psf_used"]
+        ):
+            ind.append(galaxy["frames"].index(f))
     ind.reverse()
     return ind
 
 
-def frames_pruning(galaxy):
+def frames_pruning(galaxy, strength="normal"):
     """removes bad frames from a galaxy"""
-    ind = get_bad_frames(galaxy)
-    for i in ind:
-        galaxy["frames"].pop(i)
-        galaxy["filters"].pop(i)
-    return galaxy
+    ind = get_bad_frames(galaxy, strength)
+    gal = dict()
+    for k in galaxy.keys():
+        if type(galaxy[k]) == list and len(galaxy[k]) == len(galaxy["filters"]):
+            gal[k] = []
+            for i in range(len(galaxy[k])):
+                if i not in ind:
+                    gal[k].append(galaxy[k][i])
+        else:
+            gal[k] = galaxy[k]
+    return gal
 
 
-def galaxy_pruning(galaxies):
+def galaxy_pruning(galaxies, strength="normal"):
     """removes problematic galaxies and frames from an output list of
     galaxies
     """
     gal_out = []
     for g in galaxies:
         if g["misc"]["target_flag"] >= 0:  # filter disabled
-            gp = frames_pruning(g)
+            gp = frames_pruning(g, strength)
             if len(gp["filters"]) > 0:
                 gal_out.append(gp)
     return gal_out
@@ -297,3 +325,48 @@ def get_maximal_std_distance(galaxies):
                 psf_std = px_size * psf_std_px
                 max_std = max(psf_std, max_std)
     return max_std
+
+
+def manual_reev_c(
+    galaxies, im_path="../statmorph_images_filtered/asdf.png", out_path=None
+):
+    """Allows for reevaluation of flagging of a given set of galaxies. For
+    each galaxy opens its statmorph image output if available and asks user
+    for new flag in interactive cli
+    """
+    gals = copy.deepcopy(galaxies)
+    cv2.namedWindow("img", cv2.WINDOW_NORMAL)
+    cv2.waitKey(0)
+    i = 0
+    while i < len(gals):
+        g = gals[i]
+        for l in range(len(g["filters"])):
+            s = False
+            name = g["name"] + "_" + g["filters"][l]
+            ims = cv2.imread(im_path.replace("asdf", name))
+            if ims is not None:
+                cv2.imshow("img", ims)
+                cv2.waitKey(1)
+                inp = input(
+                    f"Value for {g['name']}_{g['filters'][l]} ({i}/{len(gals)}): "
+                )
+                if inp == "<":
+                    i -= 2
+                    break
+                elif inp == ">":
+                    i = i
+                    break
+                elif inp == "<<":
+                    i = -1
+                    break
+                elif inp in {"0", "1", "2", "3", "4"}:
+                    g["frames"][l]["flag"] = int(inp)
+                else:
+                    print("unknown input " + inp)
+
+        i += 1
+        if out_path is not None and i % 10 == 0:
+            run.save_as_json({"galaxies": gals}, out_path)
+    if out_path is not None:
+        run.save_as_json({"galaxies": gals}, out_path)
+    return gals
