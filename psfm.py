@@ -1,4 +1,21 @@
-"""methods for adjusting resolution of frames
+"""Methods for adjusting resolution of frames and related functionalities
+
+Holds methods that serve the purpose of adjusting the resolution of frames
+which in turns entails calculating the current resolution by fitting gaussian
+to the psf, translating the pixel size to actual physical size at the galaxie's
+position and convolving the frame with an appropriately sized gaussian to
+adjust the resolution.
+
+Attributes:
+    
+    H0 (float): Standard Hubble constant from Planck 2018.
+    Om0 (float): Standard non-relativistic matter density from Planck 2018.
+    Od0 (float): Standard dark energy density from Planck 2018.
+    cosm (astropy.cosmology.LambdaCDM): Astropy cosmology instance used for
+        cosmological calculations.
+    sc (float): Angular size of one frame pixel in radians.
+    calculated_stds (dict): Pre-calculated values of stddevs of 2D-Gaussian
+        fits of PSFs.
 """
 
 import warnings
@@ -41,7 +58,23 @@ calculated_stds = {
 
 
 def get_psf_std(name, psf=None, show_fit=False):
-    """get the standard deviation of the provided gaussian-like psf"""
+    """Get the standard deviation of the provided gaussian-like psf.
+
+    For a provided gaussian-like PSF, obtains stddev of its Gaussian fit
+    by either directly undertaking the fitting or by looking up the value
+    in already calculated data of :attr:`calculated_stds`.
+
+    Args:
+        name (str): Name of the filter who's stddev is to be obtained/looked
+            up.
+        psf (numpy.array or None): The psf to be fitted and stddev obtained
+            represented by a numpy array or None is none is provided.
+        show_fit (bool): Whether the results of the Gaussian fitting are to be
+            visualised by plotting of the residuals.
+
+    Returns:
+        tuple: tuple containing the stddevs of the psf in x and y.
+    """
     if name in calculated_stds.keys():
         stds = calculated_stds[name]
     elif psf is not None:
@@ -66,12 +99,34 @@ def get_psf_std(name, psf=None, show_fit=False):
 
 
 def get_pixel_size(z):
-    """from galaxy information get the size of one pixel the frames (in Mpc)"""
+    """From galaxy redshift get the size of one pixel of the frames
+    (in lyr).
+
+    By employing astropy's cosmology caluclation and :attr:`sc` pixel size,
+    obtains the actual size of frames' pixels in light years at the galaxy's
+    distance.
+
+    Args:
+        z (float): The redshift of the galaxy.
+
+    Returns:
+        float: Physical size at the inputted reshift corresponding to one
+        pixel.
+    """
     dist = cosm.angular_diameter_distance(z)
     return dist.to("lyr").value * sc
 
 
 def convolve_std(data, std):
-    """convolve given data with 2D gaussian kernel of given stddev"""
+    """Convolve given data with 2D gaussian kernel of given stddev.
+
+    Args:
+        data (numpy.array or similar): Data to be convolved.
+        std (float): Standard deviation of gaussian kernel to be used for
+            the convolution.
+
+    Returns:
+        numpy.array or similar: Convolved data.
+    """
     gaus = Gaussian2DKernel(x_stddev=std, y_stddev=std)
     return convolve(data, gaus)
