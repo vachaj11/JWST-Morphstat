@@ -1,5 +1,10 @@
-"""various methods with logic for fetching and building up data for/from the
-statmorph computation
+"""Various methods with logic for fetching and building up data for/from the
+statmorph computation.
+
+Module holding the most central logic of the program including methods for
+fetchin and saving data, getting internal representation of galaxies and
+frames, calling statmorph calculation, and translating/reformating the results
+of the calculation back into easily saved and accesible format.
 """
 
 import json
@@ -16,8 +21,38 @@ import stmo
 def galaxies_data(
     gals, path_out=None, return_object=False, picture_path=None, psf_res=None
 ):
-    """Main function that computes statmorph result for an inputted
-    dictionary
+    """Main function that runs statmorph computation for an inputted list of
+    galaxies, tracks the progress, saves the results, etc.
+
+    For each of the galaxies in the inputted list, first creates its internal
+    representation in terms of the :obj:`stmo.galaxy` and :obj:`stmo.frames`
+    classes (decreasing the frames' resolution along the way if required)
+    and runs the statmorph computation from the internal representation.
+    Then based on the values of the optional arguments, can change the output
+    format of the results, save them to specified path or save the visual
+    outputs of statmorph. Along the calculation prints out its progress.
+
+    Args:
+        gals (list): List of galaxies represented as dictionaries with entries
+            specifying their name, info, included frames, etc.
+        path_out (str): Path where the results of the calculation are to be
+            saved in an ``.json`` file. If `None`, the results are not saved.
+        return_object (bool): If `True`, internal representation of galaxies
+            is returned rather than results formatted in a dictionary for
+            each galaxy. This can cause the program to run out of memory and
+            be killed for large input lists.
+        picture_path (str): Path to location where visual outputs of statmorph
+            are to be saved. Of the format "folder_name/name.png", where
+            "name" will be replaced and ".png" specifies file format. If
+            `None`, then the visualisations are not generated and saved.
+        psf_res (float): A target resolution in terms of stddev of psf in
+            lightyears to which all frames should be adjusted before
+            statmorph calculation. If `None`, no adjustment is made.
+
+    Returns:
+        list: List of either :obj:`stmo.galaxy` or dictionaries based on the
+            :arg:`return_object` option, each representing one galaxy with the
+            calculation results.
     """
     t0 = time.time()
     galaxies = []
@@ -37,7 +72,7 @@ def galaxies_data(
         if picture_path is not None:
             for f in gdata.frames:
                 f.show_stmo(
-                    save_path=picture_path.replace("asdf", (gdata.name + "_" + f.name))
+                    save_path=picture_path.replace("name", (gdata.name + "_" + f.name))
                 )
     if path_out is not None:
         save_as_json({"galaxies": galaxies}, path_out)
@@ -48,7 +83,25 @@ def galaxies_data(
 
 
 def calculate_stmo(galaxy, psf_res=None):
-    """Runs statmorph and returns stmo.galaxy object for the given galaxy"""
+    """Runs statmorph and returns internal representation of the given
+    galaxy.
+
+    For inputted galaxy in form of a dictionary, gets its information and
+    fits files corresponding to its various frames and then uses these to
+    get the galaxies' internal representation in terms of :obj:`stmo.galaxy`
+    object and run statmorph calculation for each of the frames.
+
+    Args:
+        galaxy (dict): A dictionary representing the galaxy with information
+            about it as well as frames/filters in which it is imaged.
+        psf_res (float): Parameter noting the final physical size resolution
+            to which the frames are to be adjusted before the statmorph
+            calculation. Passed into/at creation of :obj:`stmo.galaxy`.
+
+    Returns:
+        :obj:`stmo.galaxy`: Internal representation of the galaxy with the
+            statmorph calculation done.
+    """
     info = galaxy["info"]
     name = galaxy["name"]
     filters, fitss = get_fitss(galaxy)
@@ -57,7 +110,10 @@ def calculate_stmo(galaxy, psf_res=None):
 
 
 def adhoc_path(path):
-    """ad-hoc modifies the path to file according to current setup"""
+    """Modifies the path to fits files ad hoc according to current setup.
+
+    Should be moved to some config file later.
+    """
     p = "../MP_cutouts/out/galfit_results/" + path[:-4]
     p = p.replace("big/", "big/results_")
     p = p.replace("small/", "small/results_")
@@ -65,7 +121,23 @@ def adhoc_path(path):
 
 
 def get_fitss(galaxy):
-    """gets fits files of galaxy in different wavelengths"""
+    """Gets fits files of galaxy in different wavelengths.
+
+    For the passed galaxy represented by a dictionary, gets its filter names
+    and path to fits files, from which it fetches the files and loads them
+    with :obj:`astropy.io.fits` module. Then returns both.
+
+    Args:
+        galaxy (dict): A dictionary representing the galaxy with information
+            about it as well as frames/filters in which it is imaged.
+
+    Returns:
+        tuple: A tuple consisting of:
+
+            * *list* - List of `str` names of the filters.
+            * *list* - List of :obj:`astropy.io.fits.HDUList` representation
+              of the fits files.
+    """
     filters = []
     fitss = []
     for l in range(len(galaxy["filters"])):
@@ -79,14 +151,29 @@ def get_fitss(galaxy):
 
 
 def save_as_json(thing, path):
-    """saves provided object as json at specified path"""
+    """Saves provided object as `json` file at specified path.
+
+    Args:
+        thing (dict, list, etc): Thing to be saved onto the path, should
+            be serialisable in the ``.json`` file-structure, otherwise fails.
+        path (str): Path where the object is to be saved. Should include the
+            ".json" ending.
+    """
     fil = open(path, "w")
     json.dump(thing, fil, indent=4)
     fil.close()
 
 
 def fetch_json(path):
-    """fetches data of json object at specified path"""
+    """Fetches data of `json` object at specified path.
+
+    Args:
+        path (str): Full path at which the ``.json`` file is to be found.
+
+    Returns:
+        dict, list, etc.: Contents of the `json` file found at the path
+            converted into equivalent python objects.
+    """
     fil = open(path, "r")
     data = json.load(fil)
     fil.close()
@@ -94,7 +181,18 @@ def fetch_json(path):
 
 
 def get_galaxies_data(galaxies):
-    """gathers data from stmo.galaxy objects in output format"""
+    """Convert list of internal representations of galaxies into the
+    dictionary format.
+
+    Args:
+        galaxies (list): List of internal representations, each
+            :obj:`stmo.galaxy`, of galaxies.
+
+    Returns:
+        list: List of dictionary representation of galaxies with their names,
+            information, results of statmorph calculation and other internal
+            parameters.
+    """
     gals = []
     for galaxy in galaxies:
         gald = get_galaxy_data(galaxy)
@@ -103,8 +201,20 @@ def get_galaxies_data(galaxies):
 
 
 def get_galaxy_data(galaxy):
-    """extracts data from the stmo.galaxy object and formats them into the
-    output format
+    """Extracts data from the internal representation of galaxy and formats
+    them into the output dictionary.
+
+    For the given galaxy creates a dictionary into which it saves various
+    information which were attributes of the internal representation,
+    including list of frames and data calculated for each of them.
+
+    Args:
+        galaxy (stmo.galaxy): Internal representation of a galaxy to be
+            transcribed to the output dictionary.
+
+    Returns:
+        dict: A dictionary holding information relating to the galaxy and
+            results calculated for each of its frames.
     """
     gald = dict()
     gald["name"] = galaxy.name
@@ -121,8 +231,22 @@ def get_galaxy_data(galaxy):
 
 
 def get_frame_data(frame):
-    """extracts data from a stmo.frame object and formats it into the output
-    format
+    """Extracts data from an internal representation of a frame and formats
+    them into the output dictionary.
+
+    For the passed frame creates a dictionary into which it saves many
+    attributes of the frame's internal representation, including the results
+    of statmorph calculation, information about the segmentation map, masks,
+    flags, background statistics, etc.
+
+    Args:
+        frame (stmo.frame): Internal representation of a frame to be
+            translated into an output dictionary.
+
+    Returns:
+        dict: A dictionary holding information relating to the frame, its
+            characteristics as well as many of the calculation results carried
+            out for it.
     """
     st = frame.stmo
     data = {

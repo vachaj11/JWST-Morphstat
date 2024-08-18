@@ -1,10 +1,10 @@
-"""Methods for adjusting resolution of frames and related functionalities
+"""Methods for adjusting resolution of frames and related functionalities.
 
 Holds methods that serve the purpose of adjusting the resolution of frames
 which in turns entails calculating the current resolution by fitting gaussian
-to the psf, translating the pixel size to actual physical size at the galaxie's
-position and convolving the frame with an appropriately sized gaussian to
-adjust the resolution.
+to the psf, translating the pixel size to actual physical size at the 
+galaxie's position and convolving the frame with an appropriately sized 
+gaussian to adjust the resolution.
 
 Attributes:
     

@@ -42,8 +42,8 @@ class galaxy:
         info (dict): Dictionary storing various information about the galaxy
             obtained elsewhere.
         filters (list of str): List of filter names the galaxy is pictured at.
-        fitss (list of astropy.io.fits.HDUList): List of fits files corresponding to
-            each of the filters.
+        fitss (list of astropy.io.fits.HDUList): List of fits files
+            corresponding to each of the filters.
         psf_res (float or None): Target resolution (in lightyears) in which
             all the calculations are to be undertaken. If `None` no adjustions
             are made.
@@ -53,14 +53,14 @@ class galaxy:
         info (dict): Dictionary storing various information about the galaxy
             obtained elsewhere.
         filters (list of str): List of filter names the galaxy is pictured at.
-        fitss (list of astropy.io.fits.HDUList): List of fits files corresponding to
-            each of the filters.
+        fitss (list of astropy.io.fits.HDUList): List of fits files
+            corresponding to each of the filters.
         frames (list of :obj:`frame`): List of internal representations of
             frames corresponding to each of the filters.
         pixel_size (float): Physical size (in lyr) corresponding to one pixel
             in the frames.
         target_flag (int): Flag noting whether targets identified in each of
-            the frames are overlapping. (0 - good, 1-3 increasingly bad)
+            the frames are overlapping. (0 - good, 1-3 - increasingly bad)
     """
 
     def __init__(self, name, info, filters, fitss, psf_res=None):

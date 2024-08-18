@@ -1,13 +1,16 @@
-"""various methods for filtering and manipulating the results
+"""Various methods for filtering and manipulating the result/input 
+dictionaries.
+
+
 """
 
-import json
 import copy
+import json
 
-import matplotlib.pyplot as plt
-import matplotlib.image as mpi
-import numpy as np
 import cv2
+import matplotlib.image as mpi
+import matplotlib.pyplot as plt
+import numpy as np
 
 import psfm
 import run
