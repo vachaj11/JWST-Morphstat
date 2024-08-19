@@ -1,4 +1,12 @@
-"""various methods for visualisation of the results
+"""Various methods for visualisation of the results.
+
+Most accepts a list of result-dictionaries of galaxies as an input and plot
+requested values in histogram/against each other/their differences/etc.
+All of the methods utilise matplotlib.pyplot and do not call plt.show(), so
+the functions can be called multiple times to overlay different data.
+Each function also runs very course filter on the data to discard outliers and
+most implement a method where clicking on the plot gives user a name of the
+closest galaxy.
 """
 
 import warnings
@@ -11,7 +19,12 @@ import resu
 
 
 def rem_bad_outliers(data, sig=5):
-    """removes data from the set that are more than n-sigma out"""
+    """Removes data from the set that are more than n-sigma out.
+
+    Finds outliers in data[0] values and removes them (as well as
+    corresponding entries in data[i]). Also prints which galaxies are
+    being removed if one of data[i] corresponds to their names.
+    """
     mean = np.mean(data[0])
     std = np.std(data[0])
     ind = []
@@ -34,8 +47,12 @@ def rem_bad_outliers(data, sig=5):
 
 
 def plot_value(galaxies, valuex, valuey, filt="avg"):
-    """plots requested values (for a given filter or averaged) for a provided set
-    of galaxies
+    """Plots requested values (for a given filter or averaged) for a provided
+    set of galaxies.
+
+    For each galaxy gets its coordinates of (valuex, valuey) and puts it on
+    the plot. Here `valuex` corresponds to entry for the galaxy, whereas
+    `valuey` for a single or multiple of its frames (depending on `filt`).
     """
     valsy = []
     valsx = []
@@ -63,8 +80,12 @@ def plot_value(galaxies, valuex, valuey, filt="avg"):
 
 
 def plot_correlation(galaxies, valuex, valuey, filt="avg"):
-    """plots requested values (for a given filter or averaged) against each
-    other or avaraged for a provided set of galaxies
+    """Plots requested values (for a given filter or averaged) against each
+    other for a provided set of galaxies.
+
+    For each galaxy gets its coordinates of (valuex, valuey) and puts it on
+    the plot. Here both `valuex` and `valuey` correspond to a single or
+    multiple of galaxies' frames (depending on `filt`).
     """
     valsy = []
     valsx = []
@@ -94,9 +115,12 @@ def plot_correlation(galaxies, valuex, valuey, filt="avg"):
 
 
 def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg"):
-    """plots difference in requested value (for a given filter or averaged)
+    """Plots difference in requested value (for a given filter or averaged)
     for provided two sets of galaxies (and for different filters if filt is
-    provided as a list)
+    provided as a list).
+
+    Similar to :obj:`plot_value` but here to plot the difference between
+    two sets of result-galaxies.
     """
     valsd = []
     valsx = []
@@ -135,8 +159,12 @@ def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg"):
 
 
 def plot_histogram(galaxies, value, nbins=None, filt="avg"):
-    """plots a histogram of requested value (for a given filter or averaged)
-    for a given set of galaxies
+    """Plots a histogram of requested value (for a given filter or averaged)
+    for a given set of galaxies.
+
+    For each galaxy gets the value corresponding to `value` for either a
+    single frame/filter or averaged, depending on `filt`. From all values then
+    creates a histogram using basic numpy methods.
     """
     vals = []
     for g in galaxies:
@@ -154,43 +182,35 @@ def plot_histogram(galaxies, value, nbins=None, filt="avg"):
         plt.stairs(count / len(vals), bins, label=f"({len(vals)})")
 
 
-def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt="avg", pdf=False):
-    """plots a joint histogram of requested value (for a given filter or
-    averaged) for given two sets of galaxies
+def plot_hist_comp(gals_list, value, nbins=None, filt="avg", pdf=False):
+    """Plots a joint histogram of requested value (for a given filter or
+    averaged) for given n sets of galaxies.
+
+    Similar to :obj:`plot_histogram`, but works for multiple galaxies.
+    Also has an option of `pdf` which allows to normalisation such that
+    the full area of the histogram is 1 (useful for comparing for sets
+    of vastly different sizes).
     """
-    vals1 = []
-    vals1g = []
-    vals2 = []
-    vals2g = []
-    for g in galaxies1:
-        val = resu.get_filter_or_avg(g, value, filt)
-        if val:
-            vals1.append(val)
-            vals1g.append(g["name"])
-    vals1 = rem_bad_outliers([vals1, vals1g])[0]
-    if nbins is not None:
-        count1, bins1 = np.histogram(vals1, nbins)
-    else:
-        count1, bins1 = np.histogram(vals1)
-    for g in galaxies2:
-        val = resu.get_filter_or_avg(g, value, filt)
-        if val:
-            vals2.append(val)
-            vals2g.append(g["name"])
-    vals2 = rem_bad_outliers([vals2, vals2g])[0]
-    if nbins is not None:
-        count2, bins2 = np.histogram(vals2, nbins)
-    else:
-        count2, bins2 = np.histogram(vals2)
-    if pdf:
-        count1 = count1 / (len(vals1) * (bins1[1] - bins1[0]))
-        count2 = count2 / (len(vals2) * (bins2[1] - bins2[0]))
-    if filt:
-        plt.stairs(count1, bins1, label=f"filter {filt} ({len(vals1)})")
-        plt.stairs(count2, bins2, label=f"filter {filt} ({len(vals2)})")
-    else:
-        plt.stairs(count1, bins1, label=f"({len(vals1)})")
-        plt.stairs(count2, bins2, label=f"({len(vals2)})")
+    for galaxies in gals_list:
+        vals = []
+        valsg = []
+        for g in galaxies:
+            val = resu.get_filter_or_avg(g, value, filt)
+            if val:
+                vals.append(val)
+                valsg.append(g["name"])
+        vals = rem_bad_outliers([vals, valsg])[0]
+        if nbins is not None:
+            count, bins = np.histogram(vals, nbins)
+        else:
+            count, bins = np.histogram(vals)
+        if pdf:
+            count = count / (len(vals) * (bins[1] - bins[0]))
+        if filt:
+            plt.stairs(count, bins, label=f"filter {filt} ({len(vals)})")
+        else:
+            plt.stairs(count, bins, label=f"({len(vals)})")
+
     if not pdf:
         plt.title(f"Histogram comparison of {value}")
     else:
@@ -199,8 +219,12 @@ def plot_hist_comp(galaxies1, galaxies2, value, nbins=None, filt="avg", pdf=Fals
 
 
 def plot_value_filters(galaxies, valuex, valuey, filt=2):
-    """plots requested values for a provided set of galaxies across multiple
-    filters
+    """Plots requested values for a provided set of galaxies across multiple
+    filters.
+
+    Like :obj:`plot_value` but allows for plotting with different filters
+    specified by the `filt` parameter.
+    Also implements the click-to-get-galaxy-name functionality.
     """
     vals = []
     if type(filt) == int:
@@ -220,8 +244,12 @@ def plot_value_filters(galaxies, valuex, valuey, filt=2):
 
 
 def plot_correlation_filters(galaxies, valuex, valuey, filt=2):
-    """plots requested values agains each other for a provided set of galaxies
-    across multiple filters
+    """Plots requested values agains each other for a provided set of galaxies
+    across multiple filters.
+
+    Like :obj:`plot_correlation` but allows for plotting with different
+    filters specified by the `filt` parameter.
+    Also implements the click-to-get-galaxy-name functionality.
     """
     vals = []
     if type(filt) == int:
@@ -242,8 +270,11 @@ def plot_correlation_filters(galaxies, valuex, valuey, filt=2):
 
 
 def plot_histogram_filters(galaxies, value, filt=2, pdf=False):
-    """plots histograms of requested value for a given set of galaxies across
-    multiple filters
+    """Plots histograms of requested value for a given set of galaxies across
+    multiple filters.
+
+    Like :obj:`plot_histogram` but allows for plotting with different
+    filters specified by the `filt` parameter.
     """
     if type(filt) == int:
         filts = resu.get_most_filters(galaxies, filt)
@@ -258,9 +289,14 @@ def plot_histogram_filters(galaxies, value, filt=2, pdf=False):
     plt.title(f"Histogram of {value}")
 
 
-def plot_pic_value(galaxy, values=["C", "A", "S"]):
-    """for a given galaxy show its colour picture jointly with graphs of
-    requested values as a function of wavelength
+def plot_pic_value(
+    galaxy, values=["C", "A", "S"], path="../galfit_results/colour_images/"
+):
+    """For a given galaxy show its colour picture jointly with graphs of
+    requested values as a function of wavelength.
+
+    The path here is to the folder with stored pictures named as
+    "galaxy_name.png"
     """
     fig = plt.figure()
     gs = fig.add_gridspec(
@@ -268,7 +304,7 @@ def plot_pic_value(galaxy, values=["C", "A", "S"]):
     )
     axs = gs.subplots()
     fig.suptitle(galaxy["name"])
-    pic_path = "../galfit_results/colour_images/" + galaxy["name"] + ".png"
+    pic_path = path + galaxy["name"] + ".png"
     img = mpi.imread(pic_path)
     axs[0].imshow(img)
     axs[0].set_axis_off()
@@ -286,8 +322,13 @@ def plot_pic_value(galaxy, values=["C", "A", "S"]):
 
 
 def plot_sersic(galsout, galsin, valueout, filt="avg"):
-    """plots a sersic fitting parameter (for a given filter or
-    averaged) for provided input and output set of galaxies
+    """Plots a sersic fitting parameter (for a given filter or
+    averaged) for provided input and output set of galaxies.
+
+    Serves the sole purpose of comparing statmorph sersic result to galfit's.
+    The list of result-dictionaries galsout should correspond (be created
+    from) to galsin or be its subset.
+    Also implements the click-to-get-galaxy-name functionality.
     """
     valsout = []
     valsin = []

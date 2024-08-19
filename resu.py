@@ -1,7 +1,13 @@
 """Various methods for filtering and manipulating the result/input 
 dictionaries.
 
-
+This modules holds methods with logic for both preparing the input lists of 
+dictionaries (each representing a galaxy) for statmorph computation as well as
+working with the results. Both in terms of basic set operations, filtering
+using some specific parameters, finding optimal rest frame-wavelenghts and
+psf resolution, etc. 
+There are also a few mothods for data extraction from the dictionaries used
+by the visualisation methods in :obj:`vis`.
 """
 
 import copy
@@ -17,7 +23,23 @@ import run
 
 
 def get_galaxy_entry(galaxies_full, gal_name, fil_names=None):
-    """gets a galaxy of certain name and certain filters from a list"""
+    """Gets a galaxy of certain name and certain filters from a list.
+
+    From a list of galaxies/dictionaries extracts a galaxy of a given name
+    and returns it, leaving also only some subset of its filters if specified.
+
+    Args:
+        galaxies_full (list): List of dictionaries each representing one
+            input/output galaxy.
+        gal_name (str): Name of the galaxy to be extracted.
+        fil_names (list): List of str each name of a filter to be included in
+            the extracted dictionary.
+
+    Returns:
+        dict: A dictionary with the extracted galaxy data. `None` if no
+            galaxy of the specified name was found in the passed list or
+            it didn't have any specified filters.
+    """
     for g in galaxies_full:
         if g["name"] == gal_name:
             ind = []
@@ -37,7 +59,21 @@ def get_galaxy_entry(galaxies_full, gal_name, fil_names=None):
 
 
 def get_bad_frames(galaxy, strength="normal"):
-    """gets indexes of bad frames in a galaxy"""
+    """Gets indexes of bad frames in a galaxy.
+
+    Based on various flags and parameters decides which frames in the passed
+    galaxy are "bad" and returns a list of their indices.
+    There are 4 different settings of the "bad" boundary: "light", "normal",
+    "strict" and "sersic".
+
+    Args:
+        galaxy (dict): Dictionary representing the galaxy who's frames are to
+            be checked.
+        strength (str): Setting of the boundary strength. By default "normal".
+
+    Returns:
+        list: List of indices of the bad frames in the galaxy.
+    """
     ind = []
     for f in galaxy["frames"]:
         if strength == "normal" and (
@@ -72,7 +108,21 @@ def get_bad_frames(galaxy, strength="normal"):
 
 
 def frames_pruning(galaxy, strength="normal"):
-    """removes bad frames from a galaxy"""
+    """Removes bad frames from a galaxy.
+
+    Based on various flags and characteristics of results decides which
+    frames in a galaxy are "bad" and removes them.
+
+    Args:
+        galaxy (dict): Dictionary representing the galaxy who's "bad" frames
+            are to be removed.
+        strength (str): Denotes the strength used in deciding which frames
+            are bad. Passed to :obj:`get_bad_frames`.
+
+    Returns:
+        dict: Dictionary representing the galaxy with the "bad" frames
+            removed.
+    """
     ind = get_bad_frames(galaxy, strength)
     gal = dict()
     for k in galaxy.keys():
@@ -87,8 +137,22 @@ def frames_pruning(galaxy, strength="normal"):
 
 
 def galaxy_pruning(galaxies, strength="normal"):
-    """removes problematic galaxies and frames from an output list of
-    galaxies
+    """Removes problematic galaxies and frames from an output list of
+    galaxies.
+
+    Based on various flags and characteristics of results decides which
+    galaxies and frames in them are "bad" and removes them.
+
+    Args:
+        galaxies (list): List of dictionaries representing the galaxies who's
+            "bad" frames are to be removed.
+        strength (str): Denotes the strength used in deciding which frames
+            are bad. Passed to :obj:`frames_pruning` and then
+            :obj:`get_bad_frames`.
+
+    Returns:
+        list: List of dictionaries representing the galaxies with the "bad"
+            frames removed.
     """
     gal_out = []
     for g in galaxies:
@@ -100,8 +164,11 @@ def galaxy_pruning(galaxies, strength="normal"):
 
 
 def get_bad_cases(galaxies_full, galaxies_out):
-    """creates input list of problematic galaxies frames from output
-    list and input list of galaxies
+    """Creates a list of problematic galaxies and frames from
+    output/results list and its superset input list of galaxies.
+
+    Gets what results were unreliable in calculated frames' data and creates
+    an input list of galaxies with only those problematic cases.
     """
     gal_bad = []
     for g in galaxies_out:
@@ -117,7 +184,11 @@ def get_bad_cases(galaxies_full, galaxies_out):
 
 
 def json_bad_cases(path_full, path_out, path_new):
-    """from old input+output creates new input json with problematic cases"""
+    """From old input+output creates new input json with problematic cases.
+
+    As with :obj:`get_bad_cases` but works with ``.json`` files rather than
+    input/output lists.
+    """
     gal_full = run.fetch_json(path_full)["galaxies"]
     gal_out = run.fetch_json(path_out)["galaxies"]
     gal_new = get_bad_cases(gal_full, gal_out)
@@ -125,7 +196,11 @@ def json_bad_cases(path_full, path_out, path_new):
 
 
 def get_subset(galaxies_out, galaxies_in):
-    """get subset of '_out' galaxies that matches set of '_in' galaxies"""
+    """Get subset of '_out' galaxies that matches set of '_in' galaxies.
+
+    A simple set operation allowing e.g. for results to be filtered based
+    on categorisation in terms of input lists.
+    """
     galaxies_sub = []
     for gi in galaxies_in:
         go = next((g for g in galaxies_out if g["name"] == gi["name"]), None)
@@ -135,7 +210,11 @@ def get_subset(galaxies_out, galaxies_in):
 
 
 def get_complement(galaxies_out, galaxies_in):
-    """get complement of '_out' galaxies that is not in the '_in' galaxies"""
+    """Get complement of '_out' galaxies that is not in the '_in' galaxies.
+
+    A simple set operation allowing e.g. for results to be filtered based
+    on categorisation in terms of input lists.
+    """
     galaxies_com = []
     for go in galaxies_out:
         gi = next((g for g in galaxies_in if g["name"] == go["name"]), None)
@@ -145,8 +224,11 @@ def get_complement(galaxies_out, galaxies_in):
 
 
 def json_subset(path_out, path_in, path_new):
-    """from input file specifing subset of output file's galaxies create a
-    subset output json
+    """From input file specifing subset of output file's galaxies create a
+    subset output json.
+
+    As with :obj:`get_subset` but works with ``.json`` files rather than
+    input/output lists.
     """
     gal_out = run.fetch_json(path_out)["galaxies"]
     gal_in = run.fetch_json(path_in)["galaxies"]
@@ -155,7 +237,12 @@ def json_subset(path_out, path_in, path_new):
 
 
 def get_separate_in_value(galaxies, value):
-    """separate galaxies based on requested value"""
+    """Separate galaxies based on requested value.
+
+    Based on the requested value to be found in galaxies' information,
+    separates the inputted list into dictionary entries with different values
+    found as keys.
+    """
     values = {}
     for g in galaxies:
         if value in g["info"].keys():
@@ -172,11 +259,28 @@ def get_separate_in_value(galaxies, value):
 
 
 def get_filter_or_avg(galaxy, value, filt):
-    """depending on provided parameter/name of filter either return value for
-    the galaxy in a given filter or averaged across filters
-    works for both input and output galaxy list formats
-    also if filt is of the form rfwXXX, takes XXX to be rest frame wavelength
-    and uses the closest-matching filter
+    """Depending on provided parameter/name of filter either return value for
+    the galaxy in a given filter or averaged across filters.
+
+    Baseline function for getting data from the dictionaries representing
+    galaxies, used by most visualisation methods in :obj:`vis`.
+    Works for both input and output galaxy list formats.
+    Also if `filt` is of the form "rfwXXX", takes "XXX" to be rest frame
+    wavelength and uses the closest-matching filter.
+
+    Args:
+        galaxy (dict): Dictionary representing the galaxy from which the
+            value is to be extracted.
+        value (str): The name of the value to be extracted.
+        filt (str): The type of extraction used. Can be either "avg" in which
+            case an average across filters is used, "rfwXXX" in which case a
+            filter closest to the specified rfw is used, or directly a name
+            of a filter.
+
+    Returns:
+        float: The desired extracted value. Can also be `None` if the
+            extraction failed for whatever reason (e.g. the specified filter
+            is not present for the given galaxy).
     """
     if filt == "avg":
         val = 0
@@ -213,7 +317,9 @@ def get_filter_or_avg(galaxy, value, filt):
 
 
 def get_most_filters(galaxies, no):
-    """for the given set of galaxies, finds the first n most common filters"""
+    """For the given set of galaxies, finds the first `no` most common
+    filters and returns list of their names.
+    """
     filt_names = []
     for g in galaxies:
         filt_names += g["filters"]
@@ -224,7 +330,12 @@ def get_most_filters(galaxies, no):
 
 
 def get_outliers(galaxies, value, sig=3, filt="avg"):
-    """for provided galaxies find outliers of n-sigma in the given value"""
+    """For provided galaxies find outliers of n-sigma in the given value.
+
+    Using :obj:`get_filter_or_avg` gets the specified value for each galaxy,
+    finds outliers in this value in the set larger than `sig`*sigma and
+    returns a list of the galaxies with outlying data in the value.
+    """
     data = []
     ind = []
     for g in galaxies:
@@ -242,7 +353,12 @@ def get_outliers(galaxies, value, sig=3, filt="avg"):
 
 
 def print_closest(pos, data, fig=None):
-    """prints the name of the galaxy closest to the position"""
+    """Prints the name of the galaxy closest to the position.
+
+    Used to evaluate what galaxy is being clicked at in an x-y plot. From
+    list of galaxy names and corresponding x and y values, finds which is
+    the closest to the passed `pos` x and y values.
+    """
     if not (pos[0] and pos[1]):
         return None
     if fig is not None:
@@ -268,8 +384,12 @@ def print_closest(pos, data, fig=None):
 
 
 def get_galaxy(name, psf_res=None):
-    """find galaxy of a given name and calculate stmo for it returning full
-    results object
+    """Find galaxy of a given name and calculate stmo for it returning full
+    results object.
+
+    Used to quickly run the statmorph calculation for a single galaxy larger
+    than larger sample. Useful for checking e.g. how the segmentation map
+    looked for some problematic cases.
     """
     filj = run.fetch_json("dictionary_full.json")["galaxies"]
     gal_entry = get_galaxy_entry(filj, name)
@@ -277,8 +397,15 @@ def get_galaxy(name, psf_res=None):
 
 
 def get_optim_rfw(galaxies, return_filtered=False):
-    """determines the optimum rest frame wavelength to be used for the
-    provided set of galaxies
+    """Determines the optimum rest frame wavelength to be used for the
+    provided set of galaxies.
+
+    Goes through a list of possible rfw values and for each calculates what
+    would be the difference for each galaxy between the observed wavelength
+    and the closest filter. Then sums these differences and chooses such rfw
+    which minimises the sum.
+    Can also directly return a list of galaxies with only the
+    closest-matching filters included.
     """
     vals = np.linspace(25, 270, num=400)
     z = [g["info"]["ZBEST"] for g in galaxies]
@@ -317,6 +444,11 @@ def get_optim_rfw(galaxies, return_filtered=False):
 def get_maximal_std_distance(galaxies):
     """Determines the maximal std (in lyr) of psf present in the given set
     of galaxies.
+
+    For the set of galaxies and filters they are imaged at, finds for each
+    the size of stddev of its psf in lightyears (i.e. translated to the
+    corresponding rest-frame position using redshift) and returns the largest
+    one.
     """
     max_std = 0.0
     for g in galaxies:
@@ -335,7 +467,10 @@ def manual_reev_c(
 ):
     """Allows for reevaluation of flagging of a given set of galaxies. For
     each galaxy opens its statmorph image output if available and asks user
-    for new flag in interactive cli
+    for new flag in interactive cli.
+    The cli accepts values 0, 1, 2, 3, 4 for flags, and <, >, << for moving
+    around the set of galaxies.
+    (the default path is very ad hoc)
     """
     gals = copy.deepcopy(galaxies)
     cv2.namedWindow("img", cv2.WINDOW_NORMAL)
@@ -356,7 +491,7 @@ def manual_reev_c(
                 if inp == "<":
                     i -= 2
                     break
-                elif inp == ">":
+                elif inp in {">", ""}:
                     i = i
                     break
                 elif inp == "<<":
