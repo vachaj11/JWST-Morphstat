@@ -220,8 +220,7 @@ def get_galaxy_data(galaxy):
     gald["name"] = galaxy.name
     gald["filters"] = galaxy.filters
     gald["info"] = galaxy.info
-    misc = {"target_flag": galaxy.target_flag}
-    gald["misc"] = misc
+    gald["info"]["_flag_target"] = galaxy.target_flag
     frames = []
     for frame in galaxy.frames:
         data = get_frame_data(frame)
@@ -288,6 +287,7 @@ def get_frame_data(frame):
         "flag": st.flag,
         "flag_sersic": st.flag_sersic,
         "_name": frame.name,
+        "_wavelength": float(frame.name[1:-1]),
         "_mask_size": int(frame.mask.sum()),
         "_target_size": int(frame.target.sum()),
         "_subtracted": not np.array_equal(frame.data, frame.data_sub),

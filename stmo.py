@@ -76,7 +76,7 @@ class galaxy:
         self.frames = self.get_frames(self.filters, self.fitss)
         if psf_res is not None:
             for f in self.frames:
-                f.adjust_resolution(psf_res / self.pixel_size)
+                f.adjust_resolution(psf_res, self.pixel_size)
         for f in self.frames:
             f.calc_frames()
         self.target_flag = self.target_test(self.frames)
@@ -280,7 +280,7 @@ class frame:
         self.name = name
         self.fits = fits
         self.data = self.fits[0].data
-        self.psf = self.get_psf(self.name)
+        self.psf = psfm.get_psf(self.name)
         self.adjustment = None
         self.flag_seg = 0
 
@@ -299,32 +299,54 @@ class frame:
         """Runs statmorph calculation and stores the result."""
         self.stmo = self.get_stmo(self.data_sub, self.target, self.mask, self.psf)
 
-    def adjust_resolution(self, fin_std):
+    def adjust_resolution(self, psf, pixel_size):
         """Adjust the resolution of the frame image and its psf based on
         the requested final resolution.
 
-        Starts by comparing the stddev of the currect psf and one of the
-        requested final psf. If the latter is larger, than calculates what
-        additional convolution of the data has to be done (in terms of stddev
-        of gaussian kernel to be used) and applies it to the data and psf.
-        Finally stores information of the adjustment into the
-        :attr:`adjustment` attribute.
+        From the provided target-psf and the frame's own psf, determines what
+        kernel the frame's data has to be convolved with to lower the
+        resolution as required.
+        This is done using `photutils` psf-matching methods and if those
+        fail using fitting the psf data with a gaussian and taking the
+        kernel to be a gaussian with std determined from sizes of the
+        original and target psfs.
+        Finally convolves the data and the psf of the frame with the kernel
+        and stores information of the adjustment into the :attr:`adjustment`
+        attribute.
 
         Args:
-            fin_std (float): Size of the required final psf standard
-                deviation.
+            psf (list): List consisting of 1) the target psf the data is to
+                be converted to have at the original scale 2) size of one
+                pixel of the target psf in lyr 3) size of the target psf
+                standard deviation in lyr.
+            pixel_size (flot): Size of one pixel for the frame's data/psf.
         """
         if self.psf is not None:
-            stds = psfm.get_psf_std(self.name, self.psf)
-            std_s = np.sum(stds) / 2
-            if fin_std >= std_s:
-                conv_std = np.sqrt(fin_std**2 - std_s**2)
-                self.data = psfm.convolve_std(self.data, conv_std)
-                self.psf = psfm.convolve_std(self.psf, conv_std)
-                self.adjustment = fin_std
+            if type(psf) == list:
+                fin_std = psf[2] / pixel_size
+                kernel = psfm.get_conv_kernel(self.psf, psf[0], pixel_size / psf[1])
             else:
                 warnings.warn(
-                    f"Resolution of frame {self.name} is already lower than requested."
+                    f"Generating kernel for psf transformation failed, using Gaussian approximation instead."
+                )
+                fin_std = psf / pixel_size
+                kernel = None
+            if kernel is None:
+                stds = psfm.get_psf_std(self.name, self.psf)
+                cur_std = np.sum(stds) / 2
+                if fin_std >= cur_std:
+                    kernel = psfm.kernel_std(fin_std, cur_std)
+                    self.adjustment = fin_std
+                else:
+                    kernel = None
+            else:
+                self.adjustment = 0.0
+            if kernel is not None:
+                self.data = convolve(self.data, kernel)
+                self.psf = convolve(self.psf, kernel)
+            else:
+                warnings.warn(
+                    f"Resolution of frame {self.name} is already lower than requested or other error prohibited generation of adjustion kernel."
                 )
         else:
             warnings.warn(
@@ -557,27 +579,6 @@ class frame:
             )[0]
         else:
             return statmorph.source_morphology(data, seg_map, gain=1, mask=mask)[0]
-
-    def get_psf(self, name):
-        """Tries to get psf of the frame.
-
-        Based on the filter's name tries to obtain the point spread function
-        from fits file at the specified path.
-
-        Args:
-            name (str): The name of the filter.
-
-        Returns:
-            numpy.array or None: Array holding the psf data or `None` if no
-                were found.
-        """
-        try:
-            path = f"../psf/webbpsf_NIRCam_{name}_pixsc25mas.fits"
-            psf = astropy.io.fits.open(path)[0].data
-            return psf
-        except:
-            warnings.warn(f"Haven't found psf for filter {name}.")
-            return None
 
     def get_corr_flag(self, data):
         """Gets flag noting whether the given data is corrupted.

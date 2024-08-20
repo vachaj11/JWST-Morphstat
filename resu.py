@@ -396,7 +396,7 @@ def get_galaxy(name, psf_res=None):
     return run.calculate_stmo(gal_entry, psf_res=psf_res)
 
 
-def get_optim_rfw(galaxies, return_filtered=False):
+def get_optim_rfw(galaxies, return_filtered=False, M_mul=2.0):
     """Determines the optimum rest frame wavelength to be used for the
     provided set of galaxies.
 
@@ -406,29 +406,50 @@ def get_optim_rfw(galaxies, return_filtered=False):
     which minimises the sum.
     Can also directly return a list of galaxies with only the
     closest-matching filters included.
+    By default also discriminates against middle-size band filters by
+    multiplying the difference to them by 2
     """
+    galaxies = copy.deepcopy(galaxies)
     vals = np.linspace(25, 270, num=400)
-    z = [g["info"]["ZBEST"] for g in galaxies]
-    filters = [[int(f[1:-1]) for f in g["filters"]] for g in galaxies]
     v_best = 0
     diff_best = len(galaxies)
     gals_best = []
     for v in vals:
         diff = 0
         gals = []
-        for i in range(len(galaxies)):
-            v_r = v * (1 + z[i])
-            diffs = [abs(v_r - v_i) / v_i for v_i in filters[i]]
+        for g in galaxies:
+            z = g["info"]["ZBEST"]
+            filts = g["filters"]
+            v_r = v * (1 + z)
+            diffs = []
+            for f in filts:
+                v_i = int(f[1:-1])
+                if f[-1:] == "W":
+                    diffs.append(abs(v_r - v_i) / v_i)
+                else:
+                    diffs.append(M_mul * abs(v_r - v_i) / v_i)
             if len(diffs) > 0:
                 ind = diffs.index(min(diffs))
                 diff += diffs[ind]
                 gal = dict()
-                gi = galaxies[i]
-                for k in galaxies[i]:
-                    if type(gi[k]) == list and len(gi[k]) == len(diffs):
-                        gal[k] = [gi[k][ind]]
+                for k in g:
+                    if type(g[k]) == list and len(g[k]) == len(diffs):
+                        gal[k] = [g[k][ind]]
                     else:
-                        gal[k] = gi[k]
+                        gal[k] = g[k]
+                if "info" in gal.keys():
+                    if diffs[ind] > 0.6:
+                        gal["info"]["_flag_rfw"] = 3
+                    elif diffs[ind] > 0.4:
+                        gal["info"]["_flag_rfw"] = 2
+                    elif diffs[ind] > 0.2:
+                        gal["info"]["_flag_rfw"] = 1
+                    else:
+                        gal["info"]["_flag_rfw"] = 0
+                    if filts[ind][-1:] == "M":
+                        gal["info"]["_flag_rfw_M"] = 1
+                    else:
+                        gal["info"]["_flag_rfw_M"] = 0
                 gals.append(gal)
 
         if diff < diff_best:
@@ -441,16 +462,31 @@ def get_optim_rfw(galaxies, return_filtered=False):
         return v_best
 
 
-def get_maximal_std_distance(galaxies):
-    """Determines the maximal std (in lyr) of psf present in the given set
-    of galaxies.
+def get_maximal_std_distance(galaxies, return_full=True):
+    """Determines the maximal std size (in lyr) of psf present in the given
+    set of galaxies.
 
     For the set of galaxies and filters they are imaged at, finds for each
     the size of stddev of its psf in lightyears (i.e. translated to the
-    corresponding rest-frame position using redshift) and returns the largest
-    one.
+    corresponding rest-frame position using cosmological calculations) and
+    returns the largest one.
+    Alternatively with option `return_full` can also return a list consisting
+    of the largest psf, the pixel size (in lyr) of the corresponding galaxy
+    and the size of the stddev of the psf (again in lyr).
+
+    Args:
+        galaxies (list): List of dictionaries representing the galaxies who's
+            among which the maximal std distance is to be found.
+        return_full (bool): If true instead of only maximum std distance a
+            list is returned including 1) the psf corresponding to the
+            maximum psf std 2) size of one pixel for case of maximum psf std
+            in lyr 3) the maximum psf std size in lyr.
+
+    Returns:
+        float: the maximum psf std size in lyr
     """
     max_std = 0.0
+    psf_m = []
     for g in galaxies:
         px_size = psfm.get_pixel_size(g["info"]["ZBEST"])
         for f in g["filters"]:
@@ -458,8 +494,15 @@ def get_maximal_std_distance(galaxies):
             if psf_stds_px is not None:
                 psf_std_px = np.sum(psf_stds_px) / 2
                 psf_std = px_size * psf_std_px
-                max_std = max(psf_std, max_std)
-    return max_std
+                if psf_std >= max_std:
+                    max_std = psf_std
+                    if return_full:
+                        psf = psfm.get_psf(f)
+                        psf_m = [psf, px_size, psf_std]
+    if psf_m:
+        return psf_m
+    else:
+        return max_std
 
 
 def manual_reev_c(

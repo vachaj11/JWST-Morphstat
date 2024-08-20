@@ -20,11 +20,13 @@ Attributes:
 
 import warnings
 
+import astropy
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.convolution import Gaussian2DKernel, convolve
 from astropy.cosmology import LambdaCDM
 from astropy.modeling import fitting, models
+from photutils.psf import TopHatWindow, create_matching_kernel, matching
 
 # cosmological parameters from Planck 2018
 H0 = 67.49
@@ -55,6 +57,29 @@ calculated_stds = {
     "F460M": (2.4733636857760466, 2.533261797657502),
     "F480M": (2.5710296272085498, 2.632500314265589),
 }
+
+
+def get_psf(name):
+    """Tries to get psf of the frame.
+
+    Based on the filter's name tries to obtain the point spread function
+    from fits file at the specified path.
+
+    Args:
+        name (str): The name of the filter.
+
+    Returns:
+        numpy.array or None: Array holding the psf data or `None` if no
+            were found.
+    """
+    try:
+        path = f"../psf/webbpsf_NIRCam_{name}_pixsc25mas.fits"
+        psf = astropy.io.fits.open(path)[0].data
+        psf /= np.nansum(psf)
+        return psf
+    except:
+        warnings.warn(f"Haven't found psf for filter {name}.")
+        return None
 
 
 def get_psf_std(name, psf=None, show_fit=False):
@@ -117,16 +142,104 @@ def get_pixel_size(z):
     return dist.to("lyr").value * sc
 
 
-def convolve_std(data, std):
-    """Convolve given data with 2D gaussian kernel of given stddev.
+def kernel_std(fin_std, cur_std):
+    """Creates gaussian kernel to go from one gaussian psf to another based
+    on their stddevs.
+
+    Uses the fact that convolution of two gaussian is a gaussian with stddev
+    equal to sqrt of sum of squares of their stddevs, to calculate what
+    stddev a gaussian kernel to match two gaussian psfs should have, and
+    returns the created kernel.
 
     Args:
-        data (numpy.array or similar): Data to be convolved.
-        std (float): Standard deviation of gaussian kernel to be used for
-            the convolution.
+        fin_std (float): Stddev of the gaussian psf to be reached by
+            convolving the starting-point psf with the kernel.
+        cur_std (float): Stddev of the starting-point gaussian psf .
 
     Returns:
-        numpy.array or similar: Convolved data.
+        astropy.convolution.Kernel2D: The gaussian kernel with the calculated
+            appropriate stddev.
     """
+    std = np.sqrt(fin_std**2 - cur_std**2)
     gaus = Gaussian2DKernel(x_stddev=std, y_stddev=std)
-    return convolve(data, gaus)
+    return gaus
+
+
+def get_conv_kernel(psf, psf_target, scale_ratio):
+    """Creates kernel needed to go (by convolution with it) from one psf
+    to another.
+
+    Uses methods from `photutils` to determine what kernel needs to be used
+    to bridge two psfs. This is done with fourier transforms where
+    some part of the frequency-space need to be filtered out using a windowing
+    function, who's optimal shape will differ between cases. Because of this
+    the process is slightly iterative, trying different options and for each
+    calculating residuals from perfect transformation, and finally deciding
+    which option works the best based on the smallest residuals.
+    The target psf is also scaled up/down before the kernel-creation to
+    account for different pixel sizes in the psf images.
+    If the process fails for any reason, `None` is returned.
+
+    Args:
+        psf (numpy.array): Data array describing the starting-point psf.
+        psf_target (numpy.array): The psf to be reached from `psf` by
+            applying convolution with the kernel. Yet unscaled.
+        scale_ratio (float): Factor by which `psf_target` should be scaled
+            before calculating the kernel to account for pixel-size
+            diffrences.
+
+    Returns:
+        numpy.array: The kernel going from `psf` to scaled `psf_target`.
+    """
+    kernels = dict()
+    psf_scaled = scale_psf(psf_target, scale_ratio)
+    ts = [0.35, 0.37, 0.33, 0.39, 0.31, 0.41, 0.29, 0.43, 0.27, 0.45, 0.25]
+    for t in ts:
+        window = TopHatWindow(t)
+        kernel = create_matching_kernel(psf, psf_scaled, window=window)
+        re_psf = convolve(psf, kernel)
+        re_psf /= np.sum(re_psf)
+        residuals = np.sum(np.abs(re_psf - psf_scaled))
+        kernels[residuals] = kernel
+        if residuals < 0.01:
+            return kernel
+    res_min = min(kernels.keys())
+    if res_min < 0.25:
+        return kernels[res_min]
+    else:
+        return None
+
+
+def scale_psf(psf, scale_ratio):
+    """Rescales and renormalises the passed psf according to a scale ratio.
+
+    Using `photutils.psf.matching.resize_psf` convenience function, resizes
+    the passed psf by a factor of `scale_ratio`.
+    Since `resize_psf` only changes resolution, the psf has to be
+    furthermore cropped or its edges padded with 0s to maintain the same shape
+    of the psf data array.
+
+    Args:
+        psf (numpy.array): The psf to be rescaled.
+        scale_ratio (float): The scaling factor, also the ratio of output to
+            input pixel sizes.
+
+    Returns:
+        numpy.array: The rescaled psf.
+    """
+    shape = psf.shape
+    psf_scaled = matching.resize_psf(psf, 1, scale_ratio)
+    nshape = psf_scaled.shape
+    if scale_ratio < 1:
+        xstart = nshape[0] // 2 - shape[0] // 2
+        ystart = nshape[1] // 2 - shape[1] // 2
+        npsf = psf_scaled[xstart : xstart + shape[0], ystart : ystart + shape[1]]
+        npsf /= np.sum(npsf)
+    elif scale_ratio > 1:
+        xstart = shape[0] // 2 - nshape[0] // 2
+        ystart = shape[1] // 2 - nshape[1] // 2
+        npsf = np.zeros(shape)
+        npsf[xstart : xstart + nshape[0], ystart : ystart + nshape[1]] = psf_scaled
+    else:
+        npsf = psf
+    return npsf
