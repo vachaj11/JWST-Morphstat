@@ -182,7 +182,7 @@ def plot_histogram(galaxies, value, nbins=None, filt="avg"):
         plt.stairs(count / len(vals), bins, label=f"({len(vals)})")
 
 
-def plot_hist_comp(gals_list, value, nbins=None, filt="avg", pdf=False):
+def plot_hist_comp(gals_list, value, bins=10, filt="avg", pdf=False, joint_bins=False):
     """Plots a joint histogram of requested value (for a given filter or
     averaged) for given n sets of galaxies.
 
@@ -190,6 +190,43 @@ def plot_hist_comp(gals_list, value, nbins=None, filt="avg", pdf=False):
     Also has an option of `pdf` which allows to normalisation such that
     the full area of the histogram is 1 (useful for comparing for sets
     of vastly different sizes).
+    Also has an option allowing for the same bins to be used for all sets
+    of galaxies, to ease comparison.
+    """
+    if joint_bins:
+        lis = [resu.get_filter_or_avg(g, value, filt) for gs in gals_list for g in gs]
+        lisf = rem_bad_outliers([lis])[0]
+        listn = np.array(lisf)
+        valsn = listn[listn != np.array(None)]
+        bins = np.histogram(valsn, bins)[1]
+    for galaxies in gals_list:
+        vals = []
+        valsg = []
+        for g in galaxies:
+            val = resu.get_filter_or_avg(g, value, filt)
+            if val:
+                vals.append(val)
+                valsg.append(g["name"])
+        vals = rem_bad_outliers([vals, valsg])[0]
+        if filt:
+            lab = f"filter {filt} ({len(vals)})"
+        else:
+            lab = f"({len(vals)})"
+        plt.hist(vals, label=lab, density=pdf, bins=bins, histtype="step")
+
+    if not pdf:
+        plt.title(f"Histogram comparison of {value}")
+    else:
+        plt.title(f"Approximate distribution comparison of {value}")
+    plt.legend()
+
+
+def plot_smooth_comp(gals_list, value, filt="avg", pdf=False, nsig=25):
+    """Plots a smooth out distribution of requested value (for a given filter
+    or averaged) for given n sets of galaxies.
+
+    Similar to :obj:`plot_hist_comp`, but creates smooth curve by for each
+    point summing neighbouring counts over a gaussian kernel.
     """
     for galaxies in gals_list:
         vals = []
@@ -200,16 +237,20 @@ def plot_hist_comp(gals_list, value, nbins=None, filt="avg", pdf=False):
                 vals.append(val)
                 valsg.append(g["name"])
         vals = rem_bad_outliers([vals, valsg])[0]
-        if nbins is not None:
-            count, bins = np.histogram(vals, nbins)
-        else:
-            count, bins = np.histogram(vals)
-        if pdf:
-            count = count / (len(vals) * (bins[1] - bins[0]))
         if filt:
-            plt.stairs(count, bins, label=f"filter {filt} ({len(vals)})")
+            lab = f"filter {filt} ({len(vals)})"
         else:
-            plt.stairs(count, bins, label=f"({len(vals)})")
+            lab = f"({len(vals)})"
+        minx = min(vals)
+        maxx = max(vals)
+        sig = (maxx - minx) / nsig
+        gaus = lambda x: 1 / (sig * np.sqrt(2 * np.pi)) * np.exp(-((x / sig) ** 2) / 2)
+        x = np.linspace(minx, maxx, num=200)
+        y = []
+        norm = int(pdf) * (len(vals) - 1) + 1
+        for i in x:
+            y.append(sum([gaus(i - c) for c in vals]) / norm)
+        plt.plot(x, y, label=lab)
 
     if not pdf:
         plt.title(f"Histogram comparison of {value}")
@@ -218,7 +259,7 @@ def plot_hist_comp(gals_list, value, nbins=None, filt="avg", pdf=False):
     plt.legend()
 
 
-def plot_value_filters(galaxies, valuex, valuey, filt=2):
+def plot_value_filters(galaxies, valuex, valuey, filt="avg"):
     """Plots requested values for a provided set of galaxies across multiple
     filters.
 
@@ -227,8 +268,10 @@ def plot_value_filters(galaxies, valuex, valuey, filt=2):
     Also implements the click-to-get-galaxy-name functionality.
     """
     vals = []
+    if type(galaxies) is not tuple:
+        galaxies = (galaxies,)
     if type(filt) == int:
-        filts = resu.get_most_filters(galaxies, filt)
+        filts = resu.get_most_filters(sum(galaxies, []), filt)
     elif type(filt) in (list, set, tuple):
         filts = list(filt)
     elif type(filt) == str and filt == "avg":
@@ -236,14 +279,15 @@ def plot_value_filters(galaxies, valuex, valuey, filt=2):
     else:
         warnings.warn(f"Unrecognised type of filt: {type(filt)}.")
     for filt in filts:
-        vals.extend(plot_value(galaxies, valuex, valuey, filt=filt))
+        for gs in galaxies:
+            vals.extend(plot_value(gs, valuex, valuey, filt=filt))
     fig = plt.gcf()
     fig.canvas.mpl_connect(
         "button_press_event", lambda x: resu.print_closest([x.xdata, x.ydata], vals)
     )
 
 
-def plot_correlation_filters(galaxies, valuex, valuey, filt=2):
+def plot_correlation_filters(galaxies, valuex, valuey, filt="avg"):
     """Plots requested values agains each other for a provided set of galaxies
     across multiple filters.
 
@@ -252,8 +296,10 @@ def plot_correlation_filters(galaxies, valuex, valuey, filt=2):
     Also implements the click-to-get-galaxy-name functionality.
     """
     vals = []
+    if type(galaxies) is not tuple:
+        galaxies = (galaxies,)
     if type(filt) == int:
-        filts = resu.get_most_filters(galaxies, filt)
+        filts = resu.get_most_filters(sum(galaxies, []), filt)
     elif type(filt) in (list, set, tuple):
         filts = list(filt)
     elif type(filt) == str and filt == "avg":
@@ -261,7 +307,8 @@ def plot_correlation_filters(galaxies, valuex, valuey, filt=2):
     else:
         warnings.warn(f"Unrecognised type of filt: {type(filt)}.")
     for filt in filts:
-        vals.extend(plot_correlation(galaxies, valuex, valuey, filt=filt))
+        for gs in galaxies:
+            vals.extend(plot_correlation(gs, valuex, valuey, filt=filt))
     fig = plt.gcf()
     fig.canvas.mpl_connect(
         "button_press_event",
@@ -269,15 +316,17 @@ def plot_correlation_filters(galaxies, valuex, valuey, filt=2):
     )
 
 
-def plot_histogram_filters(galaxies, value, filt=2, pdf=False):
+def plot_histogram_filters(galaxies, value, filt="avg", pdf=False):
     """Plots histograms of requested value for a given set of galaxies across
     multiple filters.
 
     Like :obj:`plot_histogram` but allows for plotting with different
     filters specified by the `filt` parameter.
     """
+    if type(galaxies) is not tuple:
+        galaxies = (galaxies,)
     if type(filt) == int:
-        filts = resu.get_most_filters(galaxies, filt)
+        filts = resu.get_most_filters(sum(galaxies, []), filt)
     elif type(filt) in (list, set, tuple):
         filts = list(filt)
     elif type(filt) == str and filt == "avg":
@@ -285,7 +334,8 @@ def plot_histogram_filters(galaxies, value, filt=2, pdf=False):
     else:
         warnings.warn(f"Unrecognised type of filt: {type(filt)}.")
     for filt in filts:
-        plot_histogram(galaxies, value, filt=filt, pdf=pdf)
+        for gs in galaxies:
+            plot_histogram(gs, value, filt=filt, pdf=pdf)
     plt.title(f"Histogram of {value}")
 
 

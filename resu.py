@@ -155,11 +155,14 @@ def galaxy_pruning(galaxies, strength="normal"):
             frames removed.
     """
     gal_out = []
+    gal_good = []
     for g in galaxies:
-        if g["misc"]["target_flag"] >= 0:  # filter disabled
-            gp = frames_pruning(g, strength)
-            if len(gp["filters"]) > 0:
-                gal_out.append(gp)
+        if "_flag_rfw" not in g["info"].keys() or g["info"]["_flag_rfw"] < 2:
+            gal_good.append(g)
+    for g in gal_good:
+        gp = frames_pruning(g, strength)
+        if len(gp["filters"]) > 0:
+            gal_out.append(gp)
     return gal_out
 
 
@@ -425,9 +428,9 @@ def get_optim_rfw(galaxies, return_filtered=False, M_mul=2.0):
             for f in filts:
                 v_i = int(f[1:-1])
                 if f[-1:] == "W":
-                    diffs.append(abs(v_r - v_i) / v_i)
+                    diffs.append(abs(v_r - v_i) / v_r)
                 else:
-                    diffs.append(M_mul * abs(v_r - v_i) / v_i)
+                    diffs.append(M_mul * abs(v_r - v_i) / v_r)
             if len(diffs) > 0:
                 ind = diffs.index(min(diffs))
                 diff += diffs[ind]
@@ -455,7 +458,7 @@ def get_optim_rfw(galaxies, return_filtered=False, M_mul=2.0):
         if diff < diff_best:
             v_best = v
             diff_best = diff
-            gals_best = gals
+            gals_best = copy.deepcopy(gals)
     if return_filtered:
         return v_best, gals_best
     else:
@@ -506,13 +509,13 @@ def get_maximal_std_distance(galaxies, return_full=True):
 
 
 def manual_reev_c(
-    galaxies, im_path="../statmorph_images_filtered/asdf.png", out_path=None
+    galaxies, im_path="../statmorph_images_filtered/name.png", out_path=None
 ):
     """Allows for reevaluation of flagging of a given set of galaxies. For
     each galaxy opens its statmorph image output if available and asks user
     for new flag in interactive cli.
-    The cli accepts values 0, 1, 2, 3, 4 for flags, and <, >, << for moving
-    around the set of galaxies.
+    The cli accepts values 0, 1, 2, 3, 4 for flags, and <, >, <<, iXXX for
+    moving around the set of galaxies.
     (the default path is very ad hoc)
     """
     gals = copy.deepcopy(galaxies)
@@ -524,7 +527,7 @@ def manual_reev_c(
         for l in range(len(g["filters"])):
             s = False
             name = g["name"] + "_" + g["filters"][l]
-            ims = cv2.imread(im_path.replace("asdf", name))
+            ims = cv2.imread(im_path.replace("name", name))
             if ims is not None:
                 cv2.imshow("img", ims)
                 cv2.waitKey(1)
@@ -542,6 +545,8 @@ def manual_reev_c(
                     break
                 elif inp in {"0", "1", "2", "3", "4"}:
                     g["frames"][l]["flag"] = int(inp)
+                elif inp[:1] == "i":
+                    i = int(inp[1:]) - 1
                 else:
                     print("unknown input " + inp)
 
