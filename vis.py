@@ -25,11 +25,17 @@ def rem_bad_outliers(data, sig=5):
     corresponding entries in data[i]). Also prints which galaxies are
     being removed if one of data[i] corresponds to their names.
     """
-    mean = np.mean(data[0])
-    std = np.std(data[0])
+    datan = np.array(data[0])
+    datan = datan[datan != np.array(None)]
+    mean = np.mean(datan)
+    std = np.std(datan)
     ind = []
     for i in range(len(data[0])):
-        if data[0][i] - mean < -sig * std or data[0][i] - mean > sig * std:
+        if (
+            data[0][i] is None
+            or data[0][i] - mean < -sig * std
+            or data[0][i] - mean > sig * std
+        ):
             ind.append(i)
     ind.reverse()
     if ind:

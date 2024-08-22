@@ -50,9 +50,9 @@ Following would be a standard usage for statmorph calculation, filtering of the 
     >>> # match for rfw
     >>> rfw, gal_rfw = resu.get_optim_rfw(gal_input, return_filtered = True)
     >>> # find lowest psf resolution 
-    >>> std_max = resu.get_maximal_std_distance(gal_rfw)
-    >>> # run statmorph calculation with resolution decreased to match std_max
-    >>> gal_out = run.galaxies_data(gal_rfw, psf_res = std_max)
+    >>> max_width = resu.get_maximal_psf_width(gal_rfw)
+    >>> # run statmorph calculation with resolution decreased to match max_width
+    >>> gal_out = run.galaxies_data(gal_rfw, psf_res = max_width)
 
     ...
 

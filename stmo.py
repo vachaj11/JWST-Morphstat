@@ -44,7 +44,7 @@ class galaxy:
         filters (list of str): List of filter names the galaxy is pictured at.
         fitss (list of astropy.io.fits.HDUList): List of fits files
             corresponding to each of the filters.
-        psf_res (float or None): Target resolution (in lightyears) in which
+        psf_res (float or None): Target resolution (in kiloparsecs) in which
             all the calculations are to be undertaken. If `None` no adjustions
             are made.
 
@@ -57,7 +57,7 @@ class galaxy:
             corresponding to each of the filters.
         frames (list of :obj:`frame`): List of internal representations of
             frames corresponding to each of the filters.
-        pixel_size (float): Physical size (in lyr) corresponding to one pixel
+        pixel_size (float): Physical size (in kpc) corresponding to one pixel
             in the frames.
         target_flag (int): Flag noting whether targets identified in each of
             the frames are overlapping. (0 - good, 1-3 - increasingly bad)
@@ -243,7 +243,7 @@ class frame:
             the filter. None if no psf was able to be obtained.
         adjustment (float or None): Information whether the resolution of the
             frame has been adjusted. If not `None`, then the value corresponds
-            to the final resolution in lyr.
+            to the final resolution in kpc.
         flag_seg (int): Flag noting whether the target segmentation map used
             by this frame is consistent with the ones for other frames of the
             galaxy.
@@ -308,7 +308,7 @@ class frame:
         resolution as required.
         This is done using `photutils` psf-matching methods and if those
         fail using fitting the psf data with a gaussian and taking the
-        kernel to be a gaussian with std determined from sizes of the
+        kernel to be a gaussian with width determined from sizes of the
         original and target psfs.
         Finally convolves the data and the psf of the frame with the kernel
         and stores information of the adjustment into the :attr:`adjustment`
@@ -317,26 +317,26 @@ class frame:
         Args:
             psf (list): List consisting of 1) the target psf the data is to
                 be converted to have at the original scale 2) size of one
-                pixel of the target psf in lyr 3) size of the target psf
-                standard deviation in lyr.
+                pixel of the target psf in kpc 3) width of the target psf
+                in kpc.
             pixel_size (flot): Size of one pixel for the frame's data/psf.
         """
         if self.psf is not None:
             if type(psf) == list:
-                fin_std = psf[2] / pixel_size
+                fin_fwhm = psf[2] / pixel_size
                 kernel = psfm.get_conv_kernel(self.psf, psf[0], pixel_size / psf[1])
             else:
                 warnings.warn(
                     f"Generating kernel for psf transformation failed, using Gaussian approximation instead."
                 )
-                fin_std = psf / pixel_size
+                fin_fwhm = psf / pixel_size
                 kernel = None
             if kernel is None:
-                stds = psfm.get_psf_std(self.name, self.psf)
-                cur_std = np.sum(stds) / 2
-                if fin_std >= cur_std:
-                    kernel = psfm.kernel_std(fin_std, cur_std)
-                    self.adjustment = fin_std
+                fwhms = psfm.get_psf_fwhm(self.name, self.psf)
+                cur_fwhm = np.sum(fwhms) / 2
+                if fin_fwhm >= cur_fwhm:
+                    kernel = psfm.kernel_fwhm(fin_fwhm, cur_fwhm)
+                    self.adjustment = fin_fwhm
                 else:
                     kernel = None
             else:

@@ -157,7 +157,7 @@ def galaxy_pruning(galaxies, strength="normal"):
     gal_out = []
     gal_good = []
     for g in galaxies:
-        if "_flag_rfw" not in g["info"].keys() or g["info"]["_flag_rfw"] < 2:
+        if "_flag_rfw" not in g["info"].keys() or g["info"]["_flag_rfw"] < 1:
             gal_good.append(g)
     for g in gal_good:
         gp = frames_pruning(g, strength)
@@ -411,9 +411,10 @@ def get_optim_rfw(galaxies, return_filtered=False, M_mul=2.0):
     closest-matching filters included.
     By default also discriminates against middle-size band filters by
     multiplying the difference to them by 2
+    All the values of wavelength worked with and returned are in microns.
     """
     galaxies = copy.deepcopy(galaxies)
-    vals = np.linspace(25, 270, num=400)
+    vals = np.linspace(0.25, 2.70, num=400)
     v_best = 0
     diff_best = len(galaxies)
     gals_best = []
@@ -426,7 +427,7 @@ def get_optim_rfw(galaxies, return_filtered=False, M_mul=2.0):
             v_r = v * (1 + z)
             diffs = []
             for f in filts:
-                v_i = int(f[1:-1])
+                v_i = int(f[1:-1]) / 100
                 if f[-1:] == "W":
                     diffs.append(abs(v_r - v_i) / v_r)
                 else:
@@ -465,47 +466,47 @@ def get_optim_rfw(galaxies, return_filtered=False, M_mul=2.0):
         return v_best
 
 
-def get_maximal_std_distance(galaxies, return_full=True):
-    """Determines the maximal std size (in lyr) of psf present in the given
+def get_maximal_psf_width(galaxies, return_full=True):
+    """Determines the maximal width of psf (in kpc) present in the given
     set of galaxies.
 
     For the set of galaxies and filters they are imaged at, finds for each
-    the size of stddev of its psf in lightyears (i.e. translated to the
+    the width (fwhm) of its psf in kiloparsecs (i.e. translated to the
     corresponding rest-frame position using cosmological calculations) and
     returns the largest one.
     Alternatively with option `return_full` can also return a list consisting
-    of the largest psf, the pixel size (in lyr) of the corresponding galaxy
-    and the size of the stddev of the psf (again in lyr).
+    of the largest psf, the pixel size (in kpc) of the corresponding galaxy
+    and the width of the psf (again in kpc).
 
     Args:
         galaxies (list): List of dictionaries representing the galaxies who's
-            among which the maximal std distance is to be found.
-        return_full (bool): If true instead of only maximum std distance a
+            among which the maximal fwhm distance is to be found.
+        return_full (bool): If true instead of only maximum fwhm distance a
             list is returned including 1) the psf corresponding to the
-            maximum psf std 2) size of one pixel for case of maximum psf std
-            in lyr 3) the maximum psf std size in lyr.
+            maximum psf width 2) size of one pixel for case of maximum psf
+            fwhm in kpc 3) the maximum psf width in kpc.
 
     Returns:
-        float: the maximum psf std size in lyr
+        float: the maximum psf width in kpc
     """
-    max_std = 0.0
+    max_fwhm = 0.0
     psf_m = []
     for g in galaxies:
         px_size = psfm.get_pixel_size(g["info"]["ZBEST"])
         for f in g["filters"]:
-            psf_stds_px = psfm.get_psf_std(f)
-            if psf_stds_px is not None:
-                psf_std_px = np.sum(psf_stds_px) / 2
-                psf_std = px_size * psf_std_px
-                if psf_std >= max_std:
-                    max_std = psf_std
+            psf_fwhms_px = psfm.get_psf_fwhm(f)
+            if psf_fwhms_px is not None:
+                psf_fwhm_px = np.sum(psf_fwhms_px) / 2
+                psf_fwhm = px_size * psf_fwhm_px
+                if psf_fwhm >= max_fwhm:
+                    max_fwhm = psf_fwhm
                     if return_full:
                         psf = psfm.get_psf(f)
-                        psf_m = [psf, px_size, psf_std]
+                        psf_m = [psf, px_size, psf_fwhm]
     if psf_m:
         return psf_m
     else:
-        return max_std
+        return max_fwhm
 
 
 def manual_reev_c(

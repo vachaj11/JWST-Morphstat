@@ -45,8 +45,8 @@ def galaxies_data(
             are to be saved. Of the format "folder_name/name.png", where
             "name" will be replaced and ".png" specifies file format. If
             `None`, then the visualisations are not generated and saved.
-        psf_res (float): A target resolution in terms of stddev of psf in
-            lightyears to which all frames should be adjusted before
+        psf_res (float): A target resolution in terms of width of psf in
+            kiloparsecs to which all frames should be adjusted before
             statmorph calculation. If `None`, no adjustment is made.
 
     Returns:
@@ -287,7 +287,7 @@ def get_frame_data(frame):
         "flag": st.flag,
         "flag_sersic": st.flag_sersic,
         "_name": frame.name,
-        "_wavelength": float(frame.name[1:-1]),
+        "_wavelength": float(frame.name[1:-1]) / 100,
         "_mask_size": int(frame.mask.sum()),
         "_target_size": int(frame.target.sum()),
         "_subtracted": not np.array_equal(frame.data, frame.data_sub),
