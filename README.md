@@ -23,7 +23,9 @@ The code is divided into 6 modules:
   - `stmo.py` - holds classes internally representing galaxy and its frames, and runs statmorph calculation as well as calculation of its prerequisites
 - `run.py` - Main module for calling the statmorph calculation. The main method here is `run.galaxies_data(...)`
 - `resu.py` - Module holding methods for preparing the data for statmorph calculation as well as filtering and manipulating the resulting data
-- `vis.py` - Set of methods for visualisation of the results utilising `matplotlib` 
+- `vis.py` - Set of methods for visualisation of the results utilising `matplotlib`
+- Ad hoc modules:
+  - `line_separation.py` - Methods to find line separating positions of two sets of galaxies in some parameter space
 
 For more information on each module access its docstirng with:
 

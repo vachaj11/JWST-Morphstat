@@ -85,7 +85,7 @@ def plot_value(galaxies, valuex, valuey, filt="avg"):
     return zip(valsx, valsy, valsg)
 
 
-def plot_correlation(galaxies, valuex, valuey, filt="avg"):
+def plot_correlation(galaxies, valuex, valuey, filt="avg", return_full=False):
     """Plots requested values (for a given filter or averaged) against each
     other for a provided set of galaxies.
 
@@ -96,6 +96,7 @@ def plot_correlation(galaxies, valuex, valuey, filt="avg"):
     valsy = []
     valsx = []
     valsg = []
+    valsf = []
     for g in galaxies:
         valy = resu.get_filter_or_avg(g, valuey, filt)
         valx = resu.get_filter_or_avg(g, valuex, filt)
@@ -103,8 +104,9 @@ def plot_correlation(galaxies, valuex, valuey, filt="avg"):
             valsy.append(valy)
             valsx.append(valx)
             valsg.append(g["name"])
-    valsy, valsx, valsg = rem_bad_outliers([valsy, valsx, valsg])
-    valsx, valsy, valsg = rem_bad_outliers([valsx, valsy, valsg])
+            valsf.append(g)
+    valsy, valsx, valsg, valsf = rem_bad_outliers([valsy, valsx, valsg, valsf])
+    valsx, valsy, valsg, valsf = rem_bad_outliers([valsx, valsy, valsg, valsf])
     if filt:
         plt.plot(
             valsx,
@@ -115,9 +117,12 @@ def plot_correlation(galaxies, valuex, valuey, filt="avg"):
         )
     else:
         plt.plot(valsx, valsy, linestyle="", marker="+", label=f"({len(valsx)})")
-    plt.xlabel(valuex)
-    plt.ylabel(valuey)
-    return zip(valsx, valsy, valsg)
+    plt.xlabel = valuex
+    plt.ylabel = valuey
+    if not return_full:
+        return zip(valsx, valsy, valsg)
+    else:
+        return valsx, valsy, valsf
 
 
 def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg"):
@@ -154,8 +159,8 @@ def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg"):
         )
     else:
         plt.plot(valsx, valsd, linestyle="", marker="+", label=f"({len(valsx)})")
-    plt.xlabel(valuex)
-    plt.ylabel(valuey)
+    plt.xlabel = valuex
+    plt.ylabel = valuey
     vals = zip(valsx, valsd, valsg)
     fig = plt.gcf()
     fig.canvas.mpl_connect(
@@ -420,11 +425,30 @@ def plot_sersic(galsout, galsin, valueout, filt="avg"):
         marker="+",
         label=f"filter {filt} ({len(valsin)})",
     )
-    plt.xlabel(valuein)
-    plt.ylabel(valueout)
+    plt.xlabel = valuein
+    plt.ylabel = valueout
     vals = list(zip(valsin, valsout, valsg))
     fig = plt.gcf()
     fig.canvas.mpl_connect(
         "button_press_event",
         lambda x: resu.print_closest([x.xdata, x.ydata], vals, fig=fig),
     )
+
+
+def plot_statmorph_gini(x, y, c):
+    """Extremely ad hoc function to plot one specific graph (Figure 5.) from
+    the statmorph paper which relates Gini-M20 statistics with concentration.
+    """
+    histfull, xedges, yedges = np.histogram2d(
+        x, y, bins=50, range=[[-3, 0], [0.3, 0.8]], weights=c
+    )
+    histcount, _, _ = np.histogram2d(x, y, bins=50, range=[[-3, 0], [0.3, 0.8]])
+    hist = histfull / histcount
+    plt.figure(figsize=(6, 6))
+    X, Y = np.meshgrid(xedges, yedges)
+    plt.pcolormesh(X, Y, hist.T, cmap="jet", vmin=2, vmax=5)
+    plt.colorbar(label="Concentration, C")
+    plt.plot([-3, -1.679], [0.38, 0.565], c="blue")
+    plt.plot([-3, 0], [0.75, 0.33], c="orange")
+    plt.xlabel = "M20"
+    plt.ylabel = "Gini"

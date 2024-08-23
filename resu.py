@@ -261,7 +261,7 @@ def get_separate_in_value(galaxies, value):
     return values
 
 
-def get_filter_or_avg(galaxy, value, filt):
+def get_filter_or_avg(galaxy, value, filt="avg"):
     """Depending on provided parameter/name of filter either return value for
     the galaxy in a given filter or averaged across filters.
 
