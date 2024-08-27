@@ -17,6 +17,14 @@ import numpy as np
 
 import resu
 
+plt.rcParams.update(
+    {
+        "text.usetex": True,
+        "font.family": "Computer Modern",
+        "font.size": 15,
+    }
+)
+
 
 def rem_bad_outliers(data, sig=5):
     """Removes data from the set that are more than n-sigma out.
@@ -49,7 +57,7 @@ def rem_bad_outliers(data, sig=5):
             dat.pop(i)
     if ind:
         print()
-    return data
+    return tuple(data)
 
 
 def plot_value(galaxies, valuex, valuey, filt="avg"):
@@ -75,13 +83,16 @@ def plot_value(galaxies, valuex, valuey, filt="avg"):
             valsx,
             valsy,
             linestyle="",
-            marker="+",
+            marker=".",
             label=f"filter {filt} ({len(valsx)})",
+            alpha=0.3,
         )
     else:
-        plt.plot(valsx, valsy, linestyle="", marker="+", label=f"({len(valsx)})")
-    plt.xlabel = valuex
-    plt.ylabel = valuey
+        plt.plot(
+            valsx, valsy, linestyle="", marker=".", alpha=0.3, label=f"({len(valsx)})"
+        )
+    plt.xlabel(valuex)
+    plt.ylabel(valuey)
     return zip(valsx, valsy, valsg)
 
 
@@ -112,13 +123,16 @@ def plot_correlation(galaxies, valuex, valuey, filt="avg", return_full=False):
             valsx,
             valsy,
             linestyle="",
-            marker="+",
+            marker=".",
             label=f"filter {filt} ({len(valsx)})",
+            alpha=0.3,
         )
     else:
-        plt.plot(valsx, valsy, linestyle="", marker="+", label=f"({len(valsx)})")
-    plt.xlabel = valuex
-    plt.ylabel = valuey
+        plt.plot(
+            valsx, valsy, linestyle="", marker=".", label=f"({len(valsx)})", alpha=0.3
+        )
+    plt.xlabel(valuex)
+    plt.ylabel(valuey)
     if not return_full:
         return zip(valsx, valsy, valsg)
     else:
@@ -154,13 +168,21 @@ def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg"):
             valsx,
             valsd,
             linestyle="",
-            marker="+",
+            marker=".",
             label=f"filter {filt} ({len(valsx)})",
+            alpha=0.3,
         )
     else:
-        plt.plot(valsx, valsd, linestyle="", marker="+", label=f"({len(valsx)})")
-    plt.xlabel = valuex
-    plt.ylabel = valuey
+        plt.plot(
+            valsx,
+            valsd,
+            linestyle="",
+            marker=".",
+            label=f"({len(valsx)})",
+            alpha=0.3,
+        )
+    plt.xlabel(valuex)
+    plt.ylabel(valuey)
     vals = zip(valsx, valsd, valsg)
     fig = plt.gcf()
     fig.canvas.mpl_connect(
@@ -422,11 +444,12 @@ def plot_sersic(galsout, galsin, valueout, filt="avg"):
         valsin,
         valsout,
         linestyle="",
-        marker="+",
+        marker=".",
         label=f"filter {filt} ({len(valsin)})",
+        alpha=0.3,
     )
-    plt.xlabel = valuein
-    plt.ylabel = valueout
+    plt.xlabel(valuein)
+    plt.ylabel(valueout)
     vals = list(zip(valsin, valsout, valsg))
     fig = plt.gcf()
     fig.canvas.mpl_connect(
@@ -450,5 +473,71 @@ def plot_statmorph_gini(x, y, c):
     plt.colorbar(label="Concentration, C")
     plt.plot([-3, -1.679], [0.38, 0.565], c="blue")
     plt.plot([-3, 0], [0.75, 0.33], c="orange")
-    plt.xlabel = "M20"
-    plt.ylabel = "Gini"
+    plt.xlabel("M20")
+    plt.ylabel("Gini")
+
+
+def plot_ref_hist(
+    gals_list, value, bins=20, filt="avg", pdf=True, joint_bins=True, names=[]
+):
+    """Plots a specific type of normalised histogram comparison with smoothed
+    out trendline and corrected colours and labels
+    """
+    plot_hist_comp(
+        gals_list, value, bins=bins, filt=filt, pdf=pdf, joint_bins=joint_bins
+    )
+    plot_smooth_comp(gals_list, value, filt=filt, pdf=pdf, nsig=bins)
+    ax = plt.gca()
+    ax.set_xlabel(value)
+    for i in range(len(gals_list)):
+        c = list(ax.patches[i]._edgecolor)
+        c[-1] = 0.7
+        ax.lines[i].set_color(c)
+        ax.lines[i].set_linewidth(1)
+        ax.lines[i].set_linestyle("--")
+    L = plt.legend()
+    for i in range(len(gals_list)):
+        if len(names) == len(gals_list):
+            no = "(" + L.texts[i]._text.split("(")[-1]
+            L.texts[i].set_text(f"{names[i]} {no}")
+            L.texts[i + len(names)].set_text(f"{names[i]} trendline")
+    plt.draw()
+
+
+def plot_points(gals_list, value, filt="avg", names=[], xranges=[]):
+    """Plot a very simple plot with one point per set of galaxies and
+    appropriate error bars.
+    """
+    means = []
+    medians = []
+    stds = []
+    for galaxies in gals_list:
+        vals = []
+        valsg = []
+        for g in galaxies:
+            val = resu.get_filter_or_avg(g, value, filt)
+            if val:
+                vals.append(val)
+                valsg.append(g["name"])
+        vals, valsg = rem_bad_outliers([vals, valsg])
+        if filt:
+            lab = f"filter {filt} ({len(vals)})"
+        else:
+            lab = f"({len(vals)})"
+        means.append(np.mean(vals))
+        medians.append(np.median(vals))
+        stds.append(np.std(vals))
+    if len(xranges) == len(gals_list):
+        x = [(i[0] + i[1]) / 2 for i in xranges]
+        xe = [abs(i[1] - i[0]) / 2 for i in xranges]
+    elif len(names) == len(gals_list):
+        x = range(len(names))
+        xe = None
+        plt.xlim(-0.5, len(names) - 0.5)
+        plt.xticks(x, names)
+    plt.errorbar(x, means, yerr=stds, xerr=xe, fmt="none", capsize=5, ecolor="grey")
+    plt.plot(x, means, marker="_", c="grey", linestyle="", alpha=0.7, label="mean")
+    plt.plot(x, medians, marker="_", c="black", linestyle="", label="median")
+    plt.plot(x, means, c="grey", alpha=0.7, linewidth=0.5)
+    plt.ylabel(value)
+    plt.legend()

@@ -14,8 +14,6 @@ import copy
 import json
 
 import cv2
-import matplotlib.image as mpi
-import matplotlib.pyplot as plt
 import numpy as np
 
 import psfm
@@ -75,6 +73,8 @@ def get_bad_frames(galaxy, strength="normal"):
         list: List of indices of the bad frames in the galaxy.
     """
     ind = []
+    if "frames" not in galaxy.keys():
+        return ind
     for f in galaxy["frames"]:
         if strength == "normal" and (
             f["flag"] > 1
@@ -269,7 +269,8 @@ def get_filter_or_avg(galaxy, value, filt="avg"):
     galaxies, used by most visualisation methods in :obj:`vis`.
     Works for both input and output galaxy list formats.
     Also if `filt` is of the form "rfwXXX", takes "XXX" to be rest frame
-    wavelength and uses the closest-matching filter.
+    wavelength and uses the closest-matching filter, and if `filt` is "-1",
+    then takes the filter with the highest wavelength.
 
     Args:
         galaxy (dict): Dictionary representing the galaxy from which the
@@ -277,8 +278,8 @@ def get_filter_or_avg(galaxy, value, filt="avg"):
         value (str): The name of the value to be extracted.
         filt (str): The type of extraction used. Can be either "avg" in which
             case an average across filters is used, "rfwXXX" in which case a
-            filter closest to the specified rfw is used, or directly a name
-            of a filter.
+            filter closest to the specified rfw is used, "-1" for the filter
+            with the longest wavelength, or directly a name of a filter.
 
     Returns:
         float: The desired extracted value. Can also be `None` if the
@@ -304,6 +305,8 @@ def get_filter_or_avg(galaxy, value, filt="avg"):
         diff = [abs(rfw - f) / f for f in filters]
         ind = diff.index(min(diff))
         filt = galaxy["filters"][ind]
+    elif filt == "-1":
+        filt = galaxy["filters"][-1]
     if filt in galaxy["filters"]:
         i = galaxy["filters"].index(filt)
         for k in galaxy.keys():
@@ -399,7 +402,9 @@ def get_galaxy(name, psf_res=None):
     return run.calculate_stmo(gal_entry, psf_res=psf_res)
 
 
-def get_optim_rfw(galaxies, return_filtered=False, M_mul=2.0):
+def get_optim_rfw(
+    galaxies, M_mul=2.0, rfw_range=(0.25, 2.70), fixed_rfw=None, bad=True
+):
     """Determines the optimum rest frame wavelength to be used for the
     provided set of galaxies.
 
@@ -407,63 +412,86 @@ def get_optim_rfw(galaxies, return_filtered=False, M_mul=2.0):
     would be the difference for each galaxy between the observed wavelength
     and the closest filter. Then sums these differences and chooses such rfw
     which minimises the sum.
-    Can also directly return a list of galaxies with only the
-    closest-matching filters included.
+    Also directly return a list of galaxies with only the
+    closest-matching filters included, and the differences as a function of
+    rfw.
     By default also discriminates against middle-size band filters by
     multiplying the difference to them by 2
     All the values of wavelength worked with and returned are in microns.
+
+    If `fixed_rfw` parameter is provided, then does not calculated best rfw
+    but rather uses the value of the parameter and return a list of galaxies
+    with only the closest-matching filters.
     """
     galaxies = copy.deepcopy(galaxies)
-    vals = np.linspace(0.25, 2.70, num=400)
+    vals = np.linspace(rfw_range[0], rfw_range[1], num=400)
     v_best = 0
     diff_best = len(galaxies)
     gals_best = []
+    rfw_diff = []
+    if fixed_rfw is not None:
+        return get_rfw_difference(fixed_rfw, galaxies, M_mul, bad_add=bad)[1]
     for v in vals:
-        diff = 0
-        gals = []
-        for g in galaxies:
-            z = g["info"]["ZBEST"]
-            filts = g["filters"]
-            v_r = v * (1 + z)
-            diffs = []
-            for f in filts:
-                v_i = int(f[1:-1]) / 100
-                if f[-1:] == "W":
-                    diffs.append(abs(v_r - v_i) / v_r)
-                else:
-                    diffs.append(M_mul * abs(v_r - v_i) / v_r)
-            if len(diffs) > 0:
-                ind = diffs.index(min(diffs))
-                diff += diffs[ind]
-                gal = dict()
-                for k in g:
-                    if type(g[k]) == list and len(g[k]) == len(diffs):
-                        gal[k] = [g[k][ind]]
-                    else:
-                        gal[k] = g[k]
-                if "info" in gal.keys():
-                    if diffs[ind] > 0.6:
-                        gal["info"]["_flag_rfw"] = 3
-                    elif diffs[ind] > 0.4:
-                        gal["info"]["_flag_rfw"] = 2
-                    elif diffs[ind] > 0.2:
-                        gal["info"]["_flag_rfw"] = 1
-                    else:
-                        gal["info"]["_flag_rfw"] = 0
-                    if filts[ind][-1:] == "M":
-                        gal["info"]["_flag_rfw_M"] = 1
-                    else:
-                        gal["info"]["_flag_rfw_M"] = 0
-                gals.append(gal)
-
+        diff, gals = get_rfw_difference(v, galaxies, M_mul, bad_add=bad)
         if diff < diff_best:
             v_best = v
             diff_best = diff
             gals_best = copy.deepcopy(gals)
-    if return_filtered:
-        return v_best, gals_best
-    else:
-        return v_best
+        rfw_diff.append(diff)
+    return v_best, gals_best, (vals, rfw_diff)
+
+
+def get_rfw_difference(rfw, galaxies, M_mul, bad_add=True):
+    """For a given rest frame wavelength and a set of galaxies, calculates
+    what are the filters for each galaxy closest-matching the rfw and what is
+    the sum of their differences to the rfw.
+    Returns the sum of differences and a list of galaxies including only the
+    closest filters.
+
+    Should be called through :obj:`get_optim_rfw`, otherwise the input list
+    of galaxies might be modified.
+    """
+    diff = 0
+    gals = []
+    for g in galaxies:
+        z = g["info"]["ZBEST"]
+        filts = g["filters"]
+        v_r = rfw * (1 + z)
+        diffs = []
+        for f in filts:
+            v_i = int(f[1:-1]) / 100
+            if f[-1:] == "W":
+                diffs.append(abs(v_r - v_i) / v_r)
+            else:
+                diffs.append(M_mul * abs(v_r - v_i) / v_r)
+        if len(diffs) > 0:
+            ind = diffs.index(min(diffs))
+            diff += diffs[ind]
+            gal = dict()
+            for k in g:
+                if type(g[k]) == list and len(g[k]) == len(diffs):
+                    gal[k] = [g[k][ind]]
+                else:
+                    gal[k] = g[k]
+            if diffs[ind] > 0.6:
+                rfw_flag = 3
+            elif diffs[ind] > 0.4:
+                rfw_flag = 2
+            elif diffs[ind] > 0.2:
+                rfw_flag = 1
+            else:
+                rfw_flag = 0
+            if filts[ind][-1:] == "M":
+                M_flag = 1
+            else:
+                M_flag = 0
+            if "info" in gal.keys():
+                gal["info"]["_flag_rfw"] = rfw_flag
+                gal["info"]["_flag_rfw_M"] = M_flag
+            if bad_add or (not rfw_flag):
+                gals.append(gal)
+                diff += diffs[ind]
+    return diff / len(gals) * len(galaxies), gals
 
 
 def get_maximal_psf_width(galaxies, return_full=True):

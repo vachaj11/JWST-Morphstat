@@ -50,7 +50,7 @@ Following would be a standard usage for statmorph calculation, filtering of the 
     >>> # get input dictionary data
     >>> gal_input = run.fetch_json("dictionary_full.json")["galaxies"]
     >>> # match for rfw
-    >>> rfw, gal_rfw = resu.get_optim_rfw(gal_input, return_filtered = True)
+    >>> gal_rfw = resu.get_optim_rfw(gal_input)[1]
     >>> # find lowest psf resolution 
     >>> max_width = resu.get_maximal_psf_width(gal_rfw)
     >>> # run statmorph calculation with resolution decreased to match max_width
