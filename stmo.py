@@ -662,7 +662,8 @@ class frame:
                 fig.savefig(save_path, dpi=200)
                 plt.close(fig)
             else:
-                plt.show()
+                fig.show()
+                plt.close(fig)
         except:
             warnings.warn("Couldn't get the output image due to catastrophic flag.")
 

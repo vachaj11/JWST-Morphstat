@@ -250,8 +250,6 @@ def get_separate_in_value(galaxies, value):
     for g in galaxies:
         if value in g["info"].keys():
             val = g["info"][value]
-        elif value in g["misc"].keys():
-            val = g["misc"][value]
         else:
             val = None
         if val in values.keys():
@@ -260,6 +258,23 @@ def get_separate_in_value(galaxies, value):
             values[val] = [g]
     return values
 
+def get_bins_in_value(galaxies, value, bins=5):
+    """!!!
+    """
+    vals = []
+    for g in galaxies:
+        if value in g["info"].keys():
+            vals.append(g["info"][value])
+    lin = np.linspace(min(vals), max(vals), bins+1)
+    gals = {(lin[i], lin[i+1]):[] for i in range(len(lin)-1)}
+    for g in galaxies:
+        if value in g["info"].keys():
+            v = g["info"][value]
+            for k in gals:
+                if k[0] <= v < k[1]:
+                    gals[k].append(g)
+    return gals
+            
 
 def get_filter_or_avg(galaxy, value, filt="avg"):
     """Depending on provided parameter/name of filter either return value for
@@ -297,8 +312,6 @@ def get_filter_or_avg(galaxy, value, filt="avg"):
         if val:
             val = val / len(galaxy["filters"])
             return val
-        else:
-            return None
     if filt[:3] == "rfw":
         rfw = float(filt[3:])
         filters = [int(f[1:-1]) for f in galaxy["filters"]]
@@ -317,9 +330,9 @@ def get_filter_or_avg(galaxy, value, filt="avg"):
             ):
                 if value in galaxy[k][i].keys():
                     return float(galaxy[k][i][value])
-        return None
-    else:
-        return None
+    if value in galaxy["info"].keys():
+        return galaxy["info"][value]
+    return None
 
 
 def get_most_filters(galaxies, no):

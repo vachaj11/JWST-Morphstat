@@ -14,8 +14,10 @@ import warnings
 import matplotlib.image as mpi
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 
 import resu
+import run
 
 plt.rcParams.update(
     {
@@ -60,7 +62,7 @@ def rem_bad_outliers(data, sig=5):
     return tuple(data)
 
 
-def plot_value(galaxies, valuex, valuey, filt="avg"):
+def plot_value(galaxies, valuex, valuey, filt="avg", axis =None):
     """Plots requested values (for a given filter or averaged) for a provided
     set of galaxies.
 
@@ -68,6 +70,11 @@ def plot_value(galaxies, valuex, valuey, filt="avg"):
     the plot. Here `valuex` corresponds to entry for the galaxy, whereas
     `valuey` for a single or multiple of its frames (depending on `filt`).
     """
+    if axis is not None:
+        ax = axis
+        fig = plt.gcf()
+    else:
+        fig, ax = plt.subplots()
     valsy = []
     valsx = []
     valsg = []
@@ -79,7 +86,7 @@ def plot_value(galaxies, valuex, valuey, filt="avg"):
             valsg.append(g["name"])
     valsy, valsx, valsg = rem_bad_outliers([valsy, valsx, valsg])
     if filt:
-        plt.plot(
+        ax.plot(
             valsx,
             valsy,
             linestyle="",
@@ -88,15 +95,15 @@ def plot_value(galaxies, valuex, valuey, filt="avg"):
             alpha=0.3,
         )
     else:
-        plt.plot(
+        ax.plot(
             valsx, valsy, linestyle="", marker=".", alpha=0.3, label=f"({len(valsx)})"
         )
-    plt.xlabel(valuex)
-    plt.ylabel(valuey)
+    ax.set_xlabel(valuex)
+    ax.set_ylabel(valuey)
     return zip(valsx, valsy, valsg)
 
 
-def plot_correlation(galaxies, valuex, valuey, filt="avg", return_full=False):
+def plot_correlation(galaxies, valuex, valuey, filt="avg", return_full=False, axis = None):
     """Plots requested values (for a given filter or averaged) against each
     other for a provided set of galaxies.
 
@@ -104,6 +111,11 @@ def plot_correlation(galaxies, valuex, valuey, filt="avg", return_full=False):
     the plot. Here both `valuex` and `valuey` correspond to a single or
     multiple of galaxies' frames (depending on `filt`).
     """
+    if axis is not None:
+        ax = axis
+        fig = plt.gcf()
+    else:
+        fig, ax = plt.subplots()
     valsy = []
     valsx = []
     valsg = []
@@ -119,7 +131,7 @@ def plot_correlation(galaxies, valuex, valuey, filt="avg", return_full=False):
     valsy, valsx, valsg, valsf = rem_bad_outliers([valsy, valsx, valsg, valsf])
     valsx, valsy, valsg, valsf = rem_bad_outliers([valsx, valsy, valsg, valsf])
     if filt:
-        plt.plot(
+        ax.plot(
             valsx,
             valsy,
             linestyle="",
@@ -128,18 +140,18 @@ def plot_correlation(galaxies, valuex, valuey, filt="avg", return_full=False):
             alpha=0.3,
         )
     else:
-        plt.plot(
+        ax.plot(
             valsx, valsy, linestyle="", marker=".", label=f"({len(valsx)})", alpha=0.3
         )
-    plt.xlabel(valuex)
-    plt.ylabel(valuey)
+    ax.set_xlabel(valuex)
+    ax.set_ylabel(valuey)
     if not return_full:
         return zip(valsx, valsy, valsg)
     else:
         return valsx, valsy, valsf
 
 
-def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg"):
+def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg", axis= None):
     """Plots difference in requested value (for a given filter or averaged)
     for provided two sets of galaxies (and for different filters if filt is
     provided as a list).
@@ -147,6 +159,11 @@ def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg"):
     Similar to :obj:`plot_value` but here to plot the difference between
     two sets of result-galaxies.
     """
+    if axis is not None:
+        ax = axis
+        fig = plt.gcf()
+    else:
+        fig, ax = plt.subplots()
     valsd = []
     valsx = []
     valsg = []
@@ -164,7 +181,7 @@ def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg"):
             valsx.append(galf1[i]["info"][valuex])
             valsg.append(galf1[i]["name"])
     if type(filt) == str:
-        plt.plot(
+        ax.plot(
             valsx,
             valsd,
             linestyle="",
@@ -173,7 +190,7 @@ def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg"):
             alpha=0.3,
         )
     else:
-        plt.plot(
+        ax.plot(
             valsx,
             valsd,
             linestyle="",
@@ -181,17 +198,16 @@ def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg"):
             label=f"({len(valsx)})",
             alpha=0.3,
         )
-    plt.xlabel(valuex)
-    plt.ylabel(valuey)
+    ax.set_xlabel(valuex)
+    ax.set_ylabel(valuey)
     vals = zip(valsx, valsd, valsg)
-    fig = plt.gcf()
     fig.canvas.mpl_connect(
         "button_press_event",
         lambda x: resu.print_closest([x.xdata, x.ydata], vals, fig=fig),
     )
 
 
-def plot_histogram(galaxies, value, nbins=None, filt="avg"):
+def plot_histogram(galaxies, value, nbins=None, filt="avg", axis = None):
     """Plots a histogram of requested value (for a given filter or averaged)
     for a given set of galaxies.
 
@@ -199,6 +215,11 @@ def plot_histogram(galaxies, value, nbins=None, filt="avg"):
     single frame/filter or averaged, depending on `filt`. From all values then
     creates a histogram using basic numpy methods.
     """
+    if axis is not None:
+        ax = axis
+        fig = plt.gcf()
+    else:
+        fig, ax = plt.subplots()
     vals = []
     for g in galaxies:
         val = resu.get_filter_or_avg(g, value, filt)
@@ -210,12 +231,12 @@ def plot_histogram(galaxies, value, nbins=None, filt="avg"):
     else:
         count, bins = np.histogram(vals)
     if filt:
-        plt.stairs(count / len(vals), bins, label=f"filter {filt} ({len(vals)})")
+        ax.stairs(count / len(vals), bins, label=f"filter {filt} ({len(vals)})")
     else:
-        plt.stairs(count / len(vals), bins, label=f"({len(vals)})")
+        ax.stairs(count / len(vals), bins, label=f"({len(vals)})")
 
 
-def plot_hist_comp(gals_list, value, bins=10, filt="avg", pdf=False, joint_bins=False):
+def plot_hist_comp(gals_list, value, bins=10, filt="avg", pdf=False, joint_bins=False, axis = None):
     """Plots a joint histogram of requested value (for a given filter or
     averaged) for given n sets of galaxies.
 
@@ -226,6 +247,10 @@ def plot_hist_comp(gals_list, value, bins=10, filt="avg", pdf=False, joint_bins=
     Also has an option allowing for the same bins to be used for all sets
     of galaxies, to ease comparison.
     """
+    if axis is not None:
+        ax = axis
+    else:
+        fig, ax = plt.subplots()
     if joint_bins:
         lis = [resu.get_filter_or_avg(g, value, filt) for gs in gals_list for g in gs]
         lisf = rem_bad_outliers([lis])[0]
@@ -245,22 +270,26 @@ def plot_hist_comp(gals_list, value, bins=10, filt="avg", pdf=False, joint_bins=
             lab = f"filter {filt} ({len(vals)})"
         else:
             lab = f"({len(vals)})"
-        plt.hist(vals, label=lab, density=pdf, bins=bins, histtype="step")
+        ax.hist(vals, label=lab, density=pdf, bins=bins, histtype="step")
 
     if not pdf:
-        plt.title(f"Histogram comparison of {value}")
+        ax.set_title(f"Histogram comparison of {value}")
     else:
-        plt.title(f"Approximate distribution comparison of {value}")
-    plt.legend()
+        ax.set_title(f"Approximate distribution comparison of {value}")
+    ax.legend()
 
 
-def plot_smooth_comp(gals_list, value, filt="avg", pdf=False, nsig=25):
+def plot_smooth_comp(gals_list, value, filt="avg", pdf=False, nsig=25, axis = None):
     """Plots a smooth out distribution of requested value (for a given filter
     or averaged) for given n sets of galaxies.
 
     Similar to :obj:`plot_hist_comp`, but creates smooth curve by for each
     point summing neighbouring counts over a gaussian kernel.
     """
+    if axis is not None:
+        ax = axis
+    else:
+        fig, ax = plt.subplots()
     for galaxies in gals_list:
         vals = []
         valsg = []
@@ -280,19 +309,23 @@ def plot_smooth_comp(gals_list, value, filt="avg", pdf=False, nsig=25):
         gaus = lambda x: 1 / (sig * np.sqrt(2 * np.pi)) * np.exp(-((x / sig) ** 2) / 2)
         x = np.linspace(minx, maxx, num=200)
         y = []
-        norm = int(pdf) * (len(vals) - 1) + 1
+        if pdf:
+            norm = len(vals)
+        else:
+            norm = nsig/(maxx-minx)
+        #norm = int(pdf) * (len(vals) - 1) + 1
         for i in x:
             y.append(sum([gaus(i - c) for c in vals]) / norm)
-        plt.plot(x, y, label=lab)
+        ax.plot(x, y, label=lab)
 
     if not pdf:
-        plt.title(f"Histogram comparison of {value}")
+        ax.set_title(f"Histogram comparison of {value}")
     else:
-        plt.title(f"Approximate distribution comparison of {value}")
-    plt.legend()
+        ax.set_title(f"Approximate distribution comparison of {value}")
+    ax.legend()
 
 
-def plot_value_filters(galaxies, valuex, valuey, filt="avg"):
+def plot_value_filters(galaxies, valuex, valuey, filt="avg", axis = None):
     """Plots requested values for a provided set of galaxies across multiple
     filters.
 
@@ -300,6 +333,11 @@ def plot_value_filters(galaxies, valuex, valuey, filt="avg"):
     specified by the `filt` parameter.
     Also implements the click-to-get-galaxy-name functionality.
     """
+    if axis is not None:
+        ax = axis
+        fig = plt.gcf()
+    else:
+        fig, ax = plt.subplots()
     vals = []
     if type(galaxies) is not tuple:
         galaxies = (galaxies,)
@@ -313,14 +351,13 @@ def plot_value_filters(galaxies, valuex, valuey, filt="avg"):
         warnings.warn(f"Unrecognised type of filt: {type(filt)}.")
     for filt in filts:
         for gs in galaxies:
-            vals.extend(plot_value(gs, valuex, valuey, filt=filt))
-    fig = plt.gcf()
+            vals.extend(plot_value(gs, valuex, valuey, filt=filt, axis = ax))
     fig.canvas.mpl_connect(
         "button_press_event", lambda x: resu.print_closest([x.xdata, x.ydata], vals)
     )
 
 
-def plot_correlation_filters(galaxies, valuex, valuey, filt="avg"):
+def plot_correlation_filters(galaxies, valuex, valuey, filt="avg", axis = None):
     """Plots requested values agains each other for a provided set of galaxies
     across multiple filters.
 
@@ -328,6 +365,11 @@ def plot_correlation_filters(galaxies, valuex, valuey, filt="avg"):
     filters specified by the `filt` parameter.
     Also implements the click-to-get-galaxy-name functionality.
     """
+    if axis is not None:
+        ax = axis
+        fig = plt.gcf()
+    else:
+        fig, ax = plt.subplots()
     vals = []
     if type(galaxies) is not tuple:
         galaxies = (galaxies,)
@@ -341,21 +383,25 @@ def plot_correlation_filters(galaxies, valuex, valuey, filt="avg"):
         warnings.warn(f"Unrecognised type of filt: {type(filt)}.")
     for filt in filts:
         for gs in galaxies:
-            vals.extend(plot_correlation(gs, valuex, valuey, filt=filt))
-    fig = plt.gcf()
+            vals.extend(plot_correlation(gs, valuex, valuey, filt=filt, axis=ax))
     fig.canvas.mpl_connect(
         "button_press_event",
         lambda x: resu.print_closest([x.xdata, x.ydata], vals, fig=fig),
     )
 
 
-def plot_histogram_filters(galaxies, value, filt="avg", pdf=False):
+def plot_histogram_filters(galaxies, value, filt="avg", pdf=False, axis=None):
     """Plots histograms of requested value for a given set of galaxies across
     multiple filters.
 
     Like :obj:`plot_histogram` but allows for plotting with different
     filters specified by the `filt` parameter.
     """
+    if axis is not None:
+        ax = axis
+        fig = plt.gcf()
+    else:
+        fig, ax = plt.subplots()
     if type(galaxies) is not tuple:
         galaxies = (galaxies,)
     if type(filt) == int:
@@ -368,8 +414,8 @@ def plot_histogram_filters(galaxies, value, filt="avg", pdf=False):
         warnings.warn(f"Unrecognised type of filt: {type(filt)}.")
     for filt in filts:
         for gs in galaxies:
-            plot_histogram(gs, value, filt=filt, pdf=pdf)
-    plt.title(f"Histogram of {value}")
+            plot_histogram(gs, value, filt=filt, pdf=pdf, axis=ax)
+    ax.title(f"Histogram of {value}")
 
 
 def plot_pic_value(
@@ -404,7 +450,7 @@ def plot_pic_value(
         axs[i + 1].sharex(axs[1])
 
 
-def plot_sersic(galsout, galsin, valueout, filt="avg"):
+def plot_sersic(galsout, galsin, valueout, filt="avg", axis = None):
     """Plots a sersic fitting parameter (for a given filter or
     averaged) for provided input and output set of galaxies.
 
@@ -413,6 +459,11 @@ def plot_sersic(galsout, galsin, valueout, filt="avg"):
     from) to galsin or be its subset.
     Also implements the click-to-get-galaxy-name functionality.
     """
+    if axis is not None:
+        ax = axis
+        fig = plt.gcf()
+    else:
+        fig, ax = plt.subplots()
     valsout = []
     valsin = []
     valsg = []
@@ -440,7 +491,7 @@ def plot_sersic(galsout, galsin, valueout, filt="avg"):
             valsg.append(galfout[i]["name"])
     valsout, valsin, valsg = rem_bad_outliers([valsout, valsin, valsg])
     valsin, valsout, valsg = rem_bad_outliers([valsin, valsout, valsg])
-    plt.plot(
+    ax.plot(
         valsin,
         valsout,
         linestyle="",
@@ -448,10 +499,9 @@ def plot_sersic(galsout, galsin, valueout, filt="avg"):
         label=f"filter {filt} ({len(valsin)})",
         alpha=0.3,
     )
-    plt.xlabel(valuein)
-    plt.ylabel(valueout)
+    ax.set_xlabel(valuein)
+    ax.set_ylabel(valueout)
     vals = list(zip(valsin, valsout, valsg))
-    fig = plt.gcf()
     fig.canvas.mpl_connect(
         "button_press_event",
         lambda x: resu.print_closest([x.xdata, x.ydata], vals, fig=fig),
@@ -479,15 +529,18 @@ def plot_statmorph_gini(x, y, c):
 
 def plot_ref_hist(
     gals_list, value, bins=20, filt="avg", pdf=True, joint_bins=True, names=[]
-):
+, axis = None):
     """Plots a specific type of normalised histogram comparison with smoothed
-    out trendline and corrected colours and labels
+    out trendline and corrected colours and labels!!!
     """
+    if axis is not None:
+        ax = axis
+    else:
+        fig, ax = plt.subplots()
     plot_hist_comp(
         gals_list, value, bins=bins, filt=filt, pdf=pdf, joint_bins=joint_bins
-    )
-    plot_smooth_comp(gals_list, value, filt=filt, pdf=pdf, nsig=bins)
-    ax = plt.gca()
+    , axis = ax)
+    plot_smooth_comp(gals_list, value, filt=filt, pdf=pdf, nsig=bins, axis = ax)
     ax.set_xlabel(value)
     for i in range(len(gals_list)):
         c = list(ax.patches[i]._edgecolor)
@@ -495,22 +548,57 @@ def plot_ref_hist(
         ax.lines[i].set_color(c)
         ax.lines[i].set_linewidth(1)
         ax.lines[i].set_linestyle("--")
-    L = plt.legend()
+        ax.lines[i].set_label("")
+    L = ax.legend(loc=3)
     for i in range(len(gals_list)):
         if len(names) == len(gals_list):
             no = "(" + L.texts[i]._text.split("(")[-1]
             L.texts[i].set_text(f"{names[i]} {no}")
-            L.texts[i + len(names)].set_text(f"{names[i]} trendline")
+            #L.texts[i + len(names)].set_text(f"{names[i]} trendline")
     plt.draw()
 
+def plot_smooth2d_comp(gals_list, valuex, valuey, filt="avg", axis=None):
+    """!!!
+    """
+    if axis is not None:
+        ax = axis
+    else:
+        fig, ax = plt.subplots()
+    for galaxies in gals_list:
+        valsx = []
+        valsy = []
+        valsg = []
+        for g in galaxies:
+            valy = resu.get_filter_or_avg(g, valuey, filt)
+            try:
+                valx = g["info"][valuex]
+            except:
+                valx = None
+            if valy and valx:
+                valsx.append(valx)
+                valsy.append(valy)
+                valsg.append(g["name"])
+        valsx, valsy, valsg = rem_bad_outliers([valsx, valsy, valsg])
+        valsy, valsx, valsg = rem_bad_outliers([valsy, valsx, valsg])
+        if filt:
+            lab = f"filter {filt} ({len(valsx)})"
+        else:
+            lab = f"({len(valsx)})"
+        sns.kdeplot(x=valsx,y=valsy, fill = True, cmap="OrRd", ax=ax, bw_adjust = 0.3, alpha=0.6)
+    else:
+        ax.set_title(f"Approximate distribution comparison of {valuex}")
 
-def plot_points(gals_list, value, filt="avg", names=[], xranges=[]):
+def plot_points(gals_list, value, filt="avg", names=[], xranges=[], axis= None, xalpha = 1, yalpha = 1):
     """Plot a very simple plot with one point per set of galaxies and
-    appropriate error bars.
+    appropriate error bars. !!!
     """
     means = []
     medians = []
     stds = []
+    if axis is not None:
+        ax = axis
+    else:
+        fig, ax = plt.subplots()
     for galaxies in gals_list:
         vals = []
         valsg = []
@@ -526,18 +614,197 @@ def plot_points(gals_list, value, filt="avg", names=[], xranges=[]):
             lab = f"({len(vals)})"
         means.append(np.mean(vals))
         medians.append(np.median(vals))
-        stds.append(np.std(vals))
+        stds.append(np.std(vals, mean = medians[-1]))
     if len(xranges) == len(gals_list):
         x = [(i[0] + i[1]) / 2 for i in xranges]
         xe = [abs(i[1] - i[0]) / 2 for i in xranges]
     elif len(names) == len(gals_list):
         x = range(len(names))
         xe = None
-        plt.xlim(-0.5, len(names) - 0.5)
-        plt.xticks(x, names)
-    plt.errorbar(x, means, yerr=stds, xerr=xe, fmt="none", capsize=5, ecolor="grey")
-    plt.plot(x, means, marker="_", c="grey", linestyle="", alpha=0.7, label="mean")
-    plt.plot(x, medians, marker="_", c="black", linestyle="", label="median")
-    plt.plot(x, means, c="grey", alpha=0.7, linewidth=0.5)
-    plt.ylabel(value)
-    plt.legend()
+        ax.set_xlim(-0.5, len(names) - 0.5)
+        ax.set_xticks(x, names)
+    ax.errorbar(x, medians, yerr=stds, fmt="none", capsize=5, ecolor="black", alpha=0.5*yalpha)
+    ax.errorbar(x, medians, xerr=xe, fmt="none", capsize=5, ecolor="black", alpha=0.5*xalpha)
+    ax.plot(x, medians, marker="D", c="darkred", markersize=4, linestyle="", label="median")
+    ax.plot(x, means, marker="_", c="black", markersize = 12, linestyle="", label="mean")
+    ax.plot(x, medians, c="darkred", alpha=0.85, linewidth=1.3, linestyle="dotted")
+    ax.set_ylabel(value)
+    ax.legend()
+    
+def plot_violin(gals_list, value, filt="avg", names=[], xranges=[], axis= None):
+    """Plot a very simple violin plot with one 1d histogram per set of 
+    galaxies!!!
+    """
+    if axis is not None:
+        ax = axis
+    else:
+        fig, ax = plt.subplots()
+    valss = []
+    for galaxies in gals_list:
+        vals = []
+        valsg = []
+        for g in galaxies:
+            val = resu.get_filter_or_avg(g, value, filt)
+            if val:
+                vals.append(val)
+                valsg.append(g["name"])
+        vals, valsg = rem_bad_outliers([vals, valsg])
+        valss.append(vals)
+        
+    if len(xranges) == len(gals_list):
+        x = [(i[0] + i[1]) / 2 for i in xranges]
+    elif len(names) == len(gals_list):
+        x = list(range(len(names)))
+        ax.set_xlim(-0.5, len(names) - 0.5)
+        ax.set_xticks(x, names)
+    for i in range(len(gals_list)):
+        sns.violinplot(x=x[i],y=valss[i]*2,hue=[0]*len(valss[i])+[1]*len(valss[i]), split=True, palette={0: "orange", 1: "orange"}, alpha=0.3, ax=ax, inner=None, bw_adjust=0.5, linecolor="red", linewidth=1.5)
+        if not i%2:
+            ax.collections[-2].set_alpha(0)
+        else:
+            ax.collections[-1].set_alpha(0)
+    ax.set_ylabel(value)
+    ax.legend()
+
+def points_multi_bins(galaxies, value, filt="avg", hist = True, axis = None, no_legend = False, include = {0,1,2,3}):
+    """!!!
+    """
+    il = list(include)
+    il.sort()
+    n = {k: il.index(k) for k in include}
+    if axis is not None and len(axis)==len(include):
+        axs = axis
+        fig = plt.gcf()
+    else:
+        fig = plt.figure(figsize=(5*(len(include)-1),5))
+        gs = fig.add_gridspec(1,len(include), wspace=0)
+        axs = gs.subplots(sharey=True)
+    if 0 in include:
+        z = resu.get_separate_in_value(galaxies, "z bin")
+        plot_points((z["low_z"],z["high_z"]), value, xranges=[[0.8,1.3],[2,2.5]], axis=axs[n[0]])
+        if hist:
+            plot_smooth2d_comp((galaxies,), "ZBEST", value, axis=axs[n[0]])
+        axs[n[0]].set_xlabel("$z$")
+    if 1 in include:
+        s = resu.get_bins_in_value(galaxies, "DMS", bins = 7)
+        plot_points([s[k] for k in s], value, xranges=[k for k in s], axis=axs[n[1]], xalpha = 0.25, yalpha = 0.7)
+        if hist:
+            plot_smooth2d_comp((galaxies,), "DMS", value, axis=axs[n[1]])
+        axs[n[1]].set_xlabel("$\\log(SFR/SFR_{MS})$")
+    if 2 in include:
+        m = resu.get_bins_in_value(galaxies, "LMSTAR", bins = 7)
+        plot_points([m[k] for k in m], value, xranges=[k for k in m], axis=axs[n[2]], xalpha = 0.25, yalpha = 0.6)
+        if hist:
+            plot_smooth2d_comp((galaxies,), "LMSTAR", value, axis=axs[n[2]])
+        axs[n[2]].set_xlabel("$\\log (M_\\star/M_\\odot)$")
+    if 3 in include:
+        r = resu.get_bins_in_value(galaxies, "H_RE", bins = 7)
+        plot_points([r[k] for k in r], value, xranges=[k for k in r], axis=axs[n[3]], xalpha = 0.25, yalpha = 0.6)
+        if hist:
+            plot_smooth2d_comp((galaxies,), "H_RE", value, axis=axs[n[3]])
+        axs[n[3]].set_xlabel("$r_\\mathrm{eff}\\, (\\mathrm{arcsec})$")
+    for ax in axs:
+        ax.label_outer()
+        ax.set_title("")
+        if not no_legend:
+            ax.legend(loc=1)
+        elif ax.get_legend() is not None:
+            ax.get_legend().remove()
+    fig.suptitle(f"Value of {value} for different sample bins")
+    
+    fig.tight_layout()
+    
+def points_multi_clas(galaxies, value, filt="avg", axis=None, no_legend=False, new_names = None):
+    """!!!
+    """
+    if new_names is None:
+        names = {"bulges":"Bulge", "mergers":"Interacting-Merger", "spirals":"Spiral", "clumpy": "Clumpy"}
+    else:
+        names = new_names
+    files = {k: run.fetch_json("dict_in/n4_"+v+".json")["galaxies"] for (k,v) in names.items()}
+    separ = {k: (resu.get_subset(galaxies, v), resu.get_complement(galaxies, v)) for (k,v) in files.items()}
+    if axis is not None and len(axis)==len(names):
+        axs = axis
+        fig = plt.gcf()
+    else:
+        fig = plt.figure(figsize=(5*(len(names)-1),5))
+        gs = fig.add_gridspec(1,len(names), wspace=0)
+        axs = gs.subplots(sharey=True)
+    c = 0
+    for k in separ:
+        plot_points((separ[k][1],separ[k][0]), value, names=["non-"+k, k], axis=axs[c])
+        plot_violin((separ[k][1],separ[k][0]), value, names=["non-"+k, k], axis=axs[c])
+        axs[c].set_label(f"${k}$")
+        axs[c].label_outer()
+        if not no_legend:
+            axs[c].legend(loc=1)
+        elif axs[c].get_legend() is not None:
+            axs[c].get_legend().remove()
+        c+=1
+    fig.suptitle(f"Value of {value} for different classification")
+    fig.tight_layout()
+    
+def hist_multi_bins(galaxies, value, filt="avg", bins = 20, axis=None, no_legend = False):
+    """!!!
+    """
+    if axis is not None and len(axis)==4:
+        axs = axis
+        fig = plt.gcf()
+    else:
+        fig = plt.figure(figsize=(15,5))
+        gs = fig.add_gridspec(1,4, wspace=0)
+        axs = gs.subplots(sharex=True)
+    z = resu.get_separate_in_value(galaxies, "z bin")
+    s = resu.get_separate_in_value(galaxies, "SFR bin")
+    m = resu.get_separate_in_value(galaxies, "M bin")
+    r = resu.get_separate_in_value(galaxies, "size bin")
+    plot_ref_hist((z["low_z"],z["high_z"]), value, bins=bins, names=["low z","high z"], axis=axs[0])
+    plot_ref_hist((s["low_sfr"],s["high_sfr"]), value, bins=bins, names=["low sfr","high sfr"], axis=axs[1])
+    plot_ref_hist((m["low_m"],m["high_m"]), value, bins=bins, names=["low M","high M"], axis=axs[2])
+    plot_ref_hist((r["small"],r["big"]), value, bins=bins,names=["small R","big R"], axis=axs[3])
+    for ax in axs:
+        ax.set_xlabel(value)
+        ax.set_title("")
+        ax.yaxis.set_ticks([])
+        if no_legend and ax.get_legend() is not None:
+            ax.get_legend().remove()
+    fig.suptitle(f"Value of {value} for different sample bins")
+    
+    fig.tight_layout()
+    
+def hist_multi_clas(galaxies, value, filt="avg", bins=20, axis = None, no_legend=False):
+    """!!!
+    """
+    names = {"bulges":"Bulge", "interact./mergers":"Interacting-Merger", "spirals":"Spiral", "clumpy": "Clumpy"}
+    files = {k: run.fetch_json("dict_in/n4_"+v+".json")["galaxies"] for (k,v) in names.items()}
+    separ = {k: (resu.get_subset(galaxies, v), resu.get_complement(galaxies, v)) for (k,v) in files.items()}
+    if axis is not None and len(axis)==len(names):
+        axs = axis
+        fig = plt.gcf()
+    else:
+        fig = plt.figure(figsize=(5*(len(names)-1),5))
+        gs = fig.add_gridspec(1,len(names), wspace=0)
+        axs = gs.subplots(sharex=True)
+    c = 0
+    for k in separ:
+        plot_ref_hist((separ[k][1],separ[k][0]), value, bins=bins,  names=["non-"+k, k], axis=axs[c])
+        axs[c].set_label(f"${k}$")
+        axs[c].set_title("")
+        axs[c].yaxis.set_ticks([])
+        if no_legend and axs[c].get_legend() is not None:
+            axs[c].get_legend().remove()
+        c+=1
+    fig.suptitle(f"Value of {value} for different classification")
+    fig.tight_layout()
+    
+def plot_grided(galaxies, values, len_funct, funct, title= "", *args, **kwargs):
+    """!!!
+    """
+    fig = plt.figure(figsize=(len(values)*3.5,len_funct*3.5))
+    gs = fig.add_gridspec(len(values),len_funct, wspace = 0, hspace = 0)
+    axs = gs.subplots(sharey="row", sharex="col")
+    for i in range(len(values)):
+        funct(galaxies, values[i], axis = axs[i], no_legend=True, *args, **kwargs)
+    fig.suptitle(title)
+    fig.tight_layout()
+    
