@@ -258,15 +258,15 @@ def get_separate_in_value(galaxies, value):
             values[val] = [g]
     return values
 
+
 def get_bins_in_value(galaxies, value, bins=5):
-    """!!!
-    """
+    """!!!"""
     vals = []
     for g in galaxies:
         if value in g["info"].keys():
             vals.append(g["info"][value])
-    lin = np.linspace(min(vals), max(vals), bins+1)
-    gals = {(lin[i], lin[i+1]):[] for i in range(len(lin)-1)}
+    lin = np.linspace(min(vals), max(vals), bins + 1)
+    gals = {(lin[i], lin[i + 1]): [] for i in range(len(lin) - 1)}
     for g in galaxies:
         if value in g["info"].keys():
             v = g["info"][value]
@@ -274,7 +274,7 @@ def get_bins_in_value(galaxies, value, bins=5):
                 if k[0] <= v < k[1]:
                     gals[k].append(g)
     return gals
-            
+
 
 def get_filter_or_avg(galaxy, value, filt="avg"):
     """Depending on provided parameter/name of filter either return value for

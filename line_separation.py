@@ -23,15 +23,16 @@ def get_vals(gal, valx, valy):
             galo.append(g)
     return vsx, vsy, galo
 
+
 def best_parameters(gal1, gal2, parameters):
     parameters = list(parameters)
     vals = {}
     for i1 in range(len(parameters)):
         for i2 in range(i1, len(parameters)):
             p, s, d = max_sep(gal1, gal2, parameters[i1], parameters[i2])
-            vals[(parameters[i1],parameters[i2])] = [p, s, d]
+            vals[(parameters[i1], parameters[i2])] = [p, s, d]
     return vals
-            
+
 
 def max_sep(gal1, gal2, valx, valy, param=None):
     """For two sets of galaxies and two parameters, finds a line which best
@@ -47,13 +48,14 @@ def max_sep(gal1, gal2, valx, valy, param=None):
     v0 = np.array(((v1m[0] + v2m[0]) / 2, (v1m[1] + v2m[1]) / 2))
     slope = (v1m[1] - v2m[1]) / (v1m[0] - v2m[0])
     s0 = -1 / slope
-    vo, so, mdif = max_dif((val1x, val1y), (val2x, val2y), v0, s0, same = valx==valy)
+    vo, so, mdif = max_dif((val1x, val1y), (val2x, val2y), v0, s0, same=valx == valy)
     if param is not None:
         for i in range(len(gal1f)):
             gal1f[i]["frames"][0][param] = ldis(val1x[i], val1y[i], vo, so)
         for i in range(len(gal2f)):
             gal2f[i]["frames"][0][param] = ldis(val2x[i], val2y[i], vo, so)
     return vo, so, mdif
+
 
 def get_above_line(gal, valx, valy, point, slope):
     vx, vy, _ = get_vals(gal, valx, valy)
@@ -63,10 +65,11 @@ def get_above_line(gal, valx, valy, point, slope):
     ratio = (dist > 0).sum() / len(dist)
     return ratio
 
-def max_dif(v1, v2, v0, s0, same = False):
-    xvals = np.concatenate((v1[0],v2[0]))
-    yvals = np.concatenate((v1[1],v2[1]))
-    rang = np.array([xvals.max()-xvals.min(),yvals.max()-yvals.min()])/np.pi
+
+def max_dif(v1, v2, v0, s0, same=False):
+    xvals = np.concatenate((v1[0], v2[0]))
+    yvals = np.concatenate((v1[1], v2[1]))
+    rang = np.array([xvals.max() - xvals.min(), yvals.max() - yvals.min()]) / np.pi
     v = v0
     s = s0
     dd = 0.001
@@ -91,15 +94,15 @@ def max_dif(v1, v2, v0, s0, same = False):
             ]
         vals = dict()
         for i in a:
-            vals[i] = evalu(v1, v2, v + i[0]*rang, ro(s, i[1]))
+            vals[i] = evalu(v1, v2, v + i[0] * rang, ro(s, i[1]))
         mval = max(vals, key=vals.get)
         if mval != (0, 0):
-            v = v + mval[0]*rang
+            v = v + mval[0] * rang
             s = ro(s, mval[1])
             dd = 0.001
         else:
             dd *= 1.1
-    return v, s, evalu(v1, v2, v,s)
+    return v, s, evalu(v1, v2, v, s)
 
 
 def evalu(v1, v2, v, s):
