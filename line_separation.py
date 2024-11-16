@@ -29,7 +29,7 @@ def best_parameters(gal1, gal2, parameters):
     vals = {}
     for i1 in range(len(parameters)):
         for i2 in range(i1, len(parameters)):
-            p, s, d = max_sep(gal1, gal2, parameters[i1], parameters[i2])
+            p, s, (d, _) = max_sep(gal1, gal2, parameters[i1], parameters[i2])
             vals[(parameters[i1], parameters[i2])] = [p, s, d]
     return vals
 
@@ -94,7 +94,7 @@ def max_dif(v1, v2, v0, s0, same=False):
             ]
         vals = dict()
         for i in a:
-            vals[i] = evalu(v1, v2, v + i[0] * rang, ro(s, i[1]))
+            vals[i]  = evalu(v1, v2, v + i[0] * rang, ro(s, i[1]))[0]
         mval = max(vals, key=vals.get)
         if mval != (0, 0):
             v = v + mval[0] * rang
@@ -114,8 +114,9 @@ def evalu(v1, v2, v, s):
     dis1 = (dis1 > 0).sum() / len(dis1)
     dis2 = ldis(v2x, v2y, v, s)
     dis2 = (dis2 > 0).sum() / len(dis2)
-    return np.abs(dis1 - dis2)
+    return np.abs(dis1 - dis2), (dis1, dis2)
 
 
 def ldis(vx, vy, v, s):
-    return ((vx - v[0]) - 1 / s * (vy - v[1])) / np.sqrt(1 + 1 / s**2)
+    sign = -s/np.abs(s)
+    return ((vx - v[0]) - 1 / s * (vy - v[1])) / np.sqrt(1 + 1 / s**2)*sign

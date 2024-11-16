@@ -1,5 +1,5 @@
 Output dictionary structure description
---------------------------------
+---------------------------------------
 
 Each element in the list under the key `"galaxies"` represents one galaxy and includes:
 - `"name"` - name of galaxies

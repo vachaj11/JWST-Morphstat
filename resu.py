@@ -410,7 +410,7 @@ def get_galaxy(name, psf_res=None):
     than larger sample. Useful for checking e.g. how the segmentation map
     looked for some problematic cases.
     """
-    filj = run.fetch_json("dictionary_full.json")["galaxies"]
+    filj = run.fetch_json("dict_in/dictionary_full.json")["galaxies"]
     gal_entry = get_galaxy_entry(filj, name)
     return run.calculate_stmo(gal_entry, psf_res=psf_res)
 
