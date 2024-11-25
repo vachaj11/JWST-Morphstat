@@ -5,6 +5,7 @@ The main module here is :obj:`max_sep`.
 """
 
 import numpy as np
+
 import resu
 
 ro = lambda s, an: np.tan(np.arctan(s) + an)
@@ -94,7 +95,7 @@ def max_dif(v1, v2, v0, s0, same=False):
             ]
         vals = dict()
         for i in a:
-            vals[i]  = evalu(v1, v2, v + i[0] * rang, ro(s, i[1]))[0]
+            vals[i] = evalu(v1, v2, v + i[0] * rang, ro(s, i[1]))[0]
         mval = max(vals, key=vals.get)
         if mval != (0, 0):
             v = v + mval[0] * rang
@@ -118,5 +119,5 @@ def evalu(v1, v2, v, s):
 
 
 def ldis(vx, vy, v, s):
-    sign = -s/np.abs(s)
-    return ((vx - v[0]) - 1 / s * (vy - v[1])) / np.sqrt(1 + 1 / s**2)*sign
+    sign = -s / np.abs(s)
+    return ((vx - v[0]) - 1 / s * (vy - v[1])) / np.sqrt(1 + 1 / s**2) * sign

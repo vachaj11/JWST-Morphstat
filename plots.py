@@ -1,8 +1,12 @@
-import vis, resu, run
-import line_separation as ls
+import json
+
 import matplotlib.pyplot as plt
 import numpy as np
-import json
+
+import line_separation as ls
+import resu
+import run
+import vis
 from ren_values import *
 
 plt.rcParams.update(
@@ -26,6 +30,7 @@ filmb = resu.get_subset(fil, bulges)
 filob = resu.get_complement(fil, bulges)
 filmm = resu.get_subset(fil, mergers)
 filom = resu.get_complement(fil, mergers)
+
 
 def mergers_separation():
     point, slope, diff = ls.max_sep(filmm, filom, "M20", "Gini")
@@ -55,18 +60,22 @@ def mergers_separation():
     print("Line used in literature:")
     print(f"Gini = M_20*({-0.14:.3f})+({0.33:.3f})")
     print("Separation:")
-    mmabove = ls.get_above_line(filmm, "M20", "Gini", [0,0.33], -0.14)
-    omabove = ls.get_above_line(filom, "M20", "Gini", [0,0.33], -0.14)
-    print(f"{100*mmabove:.1f} % mergers above, {(1-omabove)*100:.1f} % non-mergers bellow")
+    mmabove = ls.get_above_line(filmm, "M20", "Gini", [0, 0.33], -0.14)
+    omabove = ls.get_above_line(filom, "M20", "Gini", [0, 0.33], -0.14)
+    print(
+        f"{100*mmabove:.1f} % mergers above, {(1-omabove)*100:.1f} % non-mergers bellow"
+    )
     print("Best separation line:")
     print(f"Gini = M_20*({slope:.3f})+({point[1]-slope*point[0]:.3f})")
     print("Separation:")
-    print(f"{100*diff[1][0]:.1f} % mergers above, {(1-diff[1][1])*100:.1f} % non-mergers bellow")
+    print(
+        f"{100*diff[1][0]:.1f} % mergers above, {(1-diff[1][1])*100:.1f} % non-mergers bellow"
+    )
     print("------------------\n")
 
     axs.set_xlabel("M$_{20}$")
     axs.set_ylabel("Gini")
-    axs.set_title("Gini-M$_{20}$ statistics for non/mergers")
+    axs.set_title("")  # Gini-M$_{20}$ statistics for non/mergers")
     axs.lines[0].set(
         c="#034a8360", markeredgecolor="#05396f9d", markersize=7, alpha=0.5
     )
@@ -110,18 +119,22 @@ def bulges_separation():
     print("Line used in literature:")
     print(f"Gini = M_20*({0.14:.3f})+({0.8:.3f})")
     print("Separation:")
-    mbabove = ls.get_above_line(filmm, "M20", "Gini", [0,0.8], 0.14)
-    obabove = ls.get_above_line(filom, "M20", "Gini", [0,0.8], 0.14)
-    print(f"{100*(1-mbabove):.1f} % bulges bellow, {obabove*100:.1f} % non-bulges above")
+    mbabove = ls.get_above_line(filmm, "M20", "Gini", [0, 0.8], 0.14)
+    obabove = ls.get_above_line(filom, "M20", "Gini", [0, 0.8], 0.14)
+    print(
+        f"{100*(1-mbabove):.1f} % bulges bellow, {obabove*100:.1f} % non-bulges above"
+    )
     print("Best separation line:")
     print(f"Gini = M_20*({slope:.3f})+({point[1]-slope*point[0]:.3f})")
     print("Separation:")
-    print(f"{100*(1-diff[1][0]):.1f} % bulges bellow, {diff[1][1]*100:.1f} % non-bulges above")
+    print(
+        f"{100*(1-diff[1][0]):.1f} % bulges bellow, {diff[1][1]*100:.1f} % non-bulges above"
+    )
     print("-----------------\n")
 
     axs.set_xlabel("M$_{20}$")
     axs.set_ylabel("Gini")
-    axs.set_title("Gini-M$_{20}$ statistics for non/bulges")
+    axs.set_title("")  # Gini-M$_{20}$ statistics for non/bulges")
     axs.lines[0].set(
         c="#034a8360", markeredgecolor="#05396f9d", markersize=7, alpha=0.5
     )
@@ -173,7 +186,7 @@ def optimal_rfw():
 
     axs.set_xlabel("$z$")
     axs.set_ylabel("observed wavelength ($\mu$m)")
-    axs.set_title("Optimal $\lambda_{RFW}$ for the JWST sample")
+    # axs.set_title("Optimal $\lambda_{RFW}$ for the JWST sample")
     axs.lines[0].set(
         c="#0f5bb42d", markeredgecolor="#0f5bb42d", markersize=7, alpha=0.4
     )
@@ -219,6 +232,7 @@ def ren_et_al():
     for i in range(3, len(L.texts)):
         L.texts[i].set_text("_")
     fig.set_size_inches(6.3, 8)
+    fig.suptitle("")
     fig.set_layout_engine(layout="tight")
 
 
@@ -236,7 +250,6 @@ def MID_classification():
     axes[0].set_ylim(-0.13, 0.6)
     axes[2].set_ylim(-0.13, 0.8)
     axes[4].set_ylim(-0.04, 0.4)
-    axes[4].set_ylabel("M$_{20}$")
     axes[5].set_xticks([0, 1], ["non-merg.", "interac./merg."])
     for i in range(len(axes[4].patches)):
         axes[4].patches[i].set_label("_")
@@ -244,6 +257,7 @@ def MID_classification():
     L.texts[0].set_text("median")
     L.texts[1].set_text("mean")
     fig.set_size_inches(6.3, 8)
+    fig.suptitle("")
     fig.set_layout_engine(layout="tight")
 
 
@@ -292,7 +306,7 @@ def sersic_comparison():
         ylim=(0, np.pi),
     )
     fig.suptitle(
-        "Sersic fit comparison: HST (F160W) vs JWST ($\lambda_{RFW}=1.37\mu$m)"
+        ""  # Sersic fit comparison: HST (F160W) vs JWST ($\lambda_{RFW}=1.37\mu$m)"
     )
     fig.set_size_inches(17.5, 5)
     fig.set_layout_engine(layout="tight")
@@ -329,22 +343,25 @@ def ginim20_class():
     L.texts[0].set_text("median")
     L.texts[1].set_text("mean")
     fig.set_size_inches(6.3, 6)
+    fig.suptitle("")
     fig.set_layout_engine(layout="tight")
+
 
 def separation_table(gal1, gal2, parameters):
     """Generates a table with separation values in various 2d parameter
     spaces formatted as latex `tabular` environment with coloured cells. The
     sets of galaxies between which the separation is to be made are the `gal1`
-    and `gal2` arguments, while the `parameters` argument defines the 
+    and `gal2` arguments, while the `parameters` argument defines the
     parameter spaces to be considered.
     """
     print("This might take some time... (~3 mins)")
     vals = ls.best_parameters(gal1, gal2, parameters)
-    vald = {k:vals[k][2] for k in vals}
+    vald = {k: vals[k][2] for k in vals}
     vmax = max([vald[k] for k in vald])
     vmin = min([vald[k] for k in vald])
-    cmap = lambda c: int((c-vmin)/(vmax-vmin)*70)
-    values = ["\hline & \\textbf{"+"} & \\textbf{".join(parameters)+"}"]
+    cmap = lambda c: int((c - vmin) / (vmax - vmin) * 70)
+    value = "\hline \hline & " + " & ".join(parameters) + "\\\\\hline\n"
+    values = []
     for nr in parameters:
         row = []
         for nc in parameters:
@@ -353,29 +370,32 @@ def separation_table(gal1, gal2, parameters):
                 if nc in k and nr in k:
                     val = vald[k]
             sval = f"\cellcolor{{red!{cmap(val)}}} {val:.3f}"
-            if parameters.index(nc)>=parameters.index(nr):
+            if parameters.index(nc) >= parameters.index(nr):
                 row.append(sval)
             else:
                 row.append("")
-        values.append(" & ".join(["\\textbf{"+nr+"}"]+row))
-    table = " \\\\\hline\n".join(values+[""])
-    table = table.replace("\\textbf{sersic_n}","$\\text{\\textbf{sersic}}_n$")
-    table = table.replace("\\textbf{sersic_rhalf}","$\\text{\\textbf{sersic}}_r$")
-    table = table.replace("\\textbf{M20}","$\\text{\\textbf{M}}_{20}$")
-    starts = f"\\begin{{tabular}}{{{"|"+"c|"*(len(parameters)+1)}}}\n"
+        values.append(" & ".join([nr] + row))
+    table = value + " \\\\\n".join(values) + "\\\\\hline\n"
+    table = table.replace("sersic_n", "$n$")
+    table = table.replace("sersic_rhalf", "$r_{\\text{eff}}$")
+    table = table.replace("M20", "$\\text{M}_{20}$")
+    starts = f"\\begin{{tabular}}{{{"c"*(len(parameters)+1)}}}\n"
     ends = "\end{tabular}"
-    table = starts+table+ends
+    table = starts + table + ends
     print("\n----------\n")
     print(table)
-    print("\n----------\n")    
+    print("\n----------\n")
+
 
 def masking_examples(galaxies):
-    fig = plt.figure(figsize=(7.65, 6))
-    gs = fig.add_gridspec(2, 3, wspace=0.06, hspace=0.17, left= 0.04, right= 0.96, top =0.87, bottom=0.06)
+    fig = plt.figure(figsize=(7.77, 5.7))
+    gs = fig.add_gridspec(
+        2, 3, wspace=0.065, hspace=0.175, left=0.03, right=0.97, top=0.925, bottom=0.045
+    )
     axs = gs.subplots().flatten()
     galaxies = galaxies[:6]
     gal_in = [resu.get_galaxy_entry(full, g) for g in galaxies]
-    gal_ps = resu.get_optim_rfw(gal_in, fixed_rfw = 1.33)
+    gal_ps = resu.get_optim_rfw(gal_in, fixed_rfw=1.33)
     gal_data = run.galaxies_data(gal_ps, return_object=True)
 
     for i in range(len(gal_data)):
@@ -384,36 +404,54 @@ def masking_examples(galaxies):
     for ax in axs:
         ax.set_xticks([])
         ax.set_yticks([])
-    axs[3].plot([],[],linestyle="--",c="red",linewidth=1.7,label="Masked area")
-    axs[3].plot([],[],linestyle="--",c="blue",linewidth=1.7,label="Target area")
+    axs[3].plot([], [], linestyle="--", c="red", linewidth=1.7, label="Masked area")
+    axs[3].plot([], [], linestyle="--", c="blue", linewidth=1.7, label="Target area")
     L = axs[3].legend(loc=1)
-    fig.suptitle("Examples of target identification and masking")
+    fig.suptitle("")  # Examples of target identification and masking")
 
-    
+
 def plot_segmentation(g, axis=None):
     if axis is None:
         axis = plt.gca()
     f = g.frames[0]
     l = np.log(f.convolved)
     ln = np.nan_to_num(np.log(f.data), nan=-100)
-    r = np.nanmax(l)-np.nanmin(l)
-    axis.imshow(ln, cmap="gray", vmin=np.nanmin(l)+r/2,vmax=np.nanmax(l))
-    axis.contour(f.target, levels=1, colors= "blue", linestyles="--", linewidths=1.7)
-    axis.contour(f.mask, levels=1, colors= "red", linestyles="--", linewidths=1.7)
+    r = np.nanmax(l) - np.nanmin(l)
+    axis.imshow(ln, cmap="gray", vmin=np.nanmin(l) + r / 2, vmax=np.nanmax(l))
+    axis.contour(f.target, levels=1, colors="blue", linestyles="--", linewidths=1.7)
+    axis.contour(f.mask, levels=1, colors="red", linestyles="--", linewidths=1.7)
+
 
 if __name__ == "__main__":
     """Comment out lines corresponding to plots you want to create."""
-    #mergers_separation()
-    #bulges_separation()
-    #optimal_rfw()
-    #ren_et_al()
-    #MID_classification()
-    #sersic_comparison()
-    #ginim20_class()
-    names = ["COS4_02049", "COS4_02167", "COS4_17389", "COS4_20910", "U4_26324", "U4_21440"]
+    # mergers_separation()
+    # bulges_separation()
+    # optimal_rfw()
+    # ren_et_al()
+    # MID_classification()
+    # sersic_comparison()
+    # ginim20_class()
+    names = [
+        "COS4_02049",
+        "COS4_02167",
+        "COS4_17389",
+        "COS4_20910",
+        "U4_26324",
+        "U4_21440",
+    ]
     #masking_examples(names)
     plt.show()
-    parameters = ["Gini", "M20", "C","A","S", "M","I","D", "sersic_n", "sersic_rhalf"]
-    #separation_table(filmm, filom, parameters)
-    #separation_table(filmb, filob, parameters)
-
+    parameters = [
+        "Gini",
+        "M20",
+        "C",
+        "A",
+        "S",
+        "M",
+        "I",
+        "D",
+        "sersic_n",
+        "sersic_rhalf",
+    ]
+    separation_table(filmm, filom, parameters)
+    separation_table(filmb, filob, parameters)
