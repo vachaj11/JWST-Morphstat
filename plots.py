@@ -69,7 +69,7 @@ def mergers_separation():
     print(f"Gini = M_20*({slope:.3f})+({point[1]-slope*point[0]:.3f})")
     print("Separation:")
     print(
-        f"{100*diff[1][0]:.1f} % mergers above, {(1-diff[1][1])*100:.1f} % non-mergers bellow"
+        f"{100*diff[1][0]:.1f} % mergers above, {diff[1][1]*100:.1f} % non-mergers bellow"
     )
     print("------------------\n")
 
@@ -122,13 +122,13 @@ def bulges_separation():
     mbabove = ls.get_above_line(filmm, "M20", "Gini", [0, 0.8], 0.14)
     obabove = ls.get_above_line(filom, "M20", "Gini", [0, 0.8], 0.14)
     print(
-        f"{100*(1-mbabove):.1f} % bulges bellow, {obabove*100:.1f} % non-bulges above"
+        f"{100*mbabove:.1f} % bulges bellow, {(1-obabove)*100:.1f} % non-bulges above"
     )
     print("Best separation line:")
     print(f"Gini = M_20*({slope:.3f})+({point[1]-slope*point[0]:.3f})")
     print("Separation:")
     print(
-        f"{100*(1-diff[1][0]):.1f} % bulges bellow, {diff[1][1]*100:.1f} % non-bulges above"
+        f"{100*diff[1][0]:.1f} % bulges bellow, {diff[1][1]*100:.1f} % non-bulges above"
     )
     print("-----------------\n")
 
@@ -354,7 +354,7 @@ def separation_table(gal1, gal2, parameters):
     and `gal2` arguments, while the `parameters` argument defines the
     parameter spaces to be considered.
     """
-    print("This might take some time... (~3 mins)")
+    print("This might take some time...")
     vals = ls.best_parameters(gal1, gal2, parameters)
     vald = {k: vals[k][2] for k in vals}
     vmax = max([vald[k] for k in vald])
@@ -367,7 +367,7 @@ def separation_table(gal1, gal2, parameters):
         for nc in parameters:
             val = 0
             for k in vald:
-                if nc in k and nr in k:
+                if set([nc, nr]) == set(k):
                     val = vald[k]
             sval = f"\cellcolor{{red!{cmap(val)}}} {val:.3f}"
             if parameters.index(nc) >= parameters.index(nr):
@@ -424,6 +424,20 @@ def plot_segmentation(g, axis=None):
 
 if __name__ == "__main__":
     """Comment out lines corresponding to plots you want to create."""
+    parameters = [
+        "Gini",
+        "M20",
+        "C",
+        "A",
+        "S",
+        "M",
+        "I",
+        "D",
+        "sersic_n",
+        "sersic_rhalf",
+    ]
+    separation_table(filmm, filom, parameters)
+    # separation_table(filmb, filob, parameters)
     # mergers_separation()
     # bulges_separation()
     # optimal_rfw()
@@ -439,19 +453,5 @@ if __name__ == "__main__":
         "U4_26324",
         "U4_21440",
     ]
-    #masking_examples(names)
+    # masking_examples(names)
     plt.show()
-    parameters = [
-        "Gini",
-        "M20",
-        "C",
-        "A",
-        "S",
-        "M",
-        "I",
-        "D",
-        "sersic_n",
-        "sersic_rhalf",
-    ]
-    separation_table(filmm, filom, parameters)
-    separation_table(filmb, filob, parameters)
