@@ -206,6 +206,8 @@ class galaxy:
         as problematic by modifying the appropriate flag of the :obj:`frame`
         object.
         """
+        if len(self.frames) == 0:
+            return None
         targets = [f.target for f in self.frames]
         t_sum = np.zeros(targets[0].shape)
         margin = int((len(targets) + 1) / 2)

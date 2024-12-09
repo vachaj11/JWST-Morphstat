@@ -454,6 +454,90 @@ def get_optim_rfw(
     return v_best, gals_best, (vals, rfw_diff)
 
 
+def get_rfw_range(rang, galaxies, M_mul=2.0, bad=False):
+    galaxies = copy.deepcopy(galaxies)
+    galmin = get_optim_rfw(galaxies, M_mul, fixed_rfw=rang[0], bad=bad)
+    galmax = get_optim_rfw(galaxies, M_mul, fixed_rfw=rang[1], bad=bad)
+    galint = get_rfw_between(rang, galaxies)
+    galse = join_galaxies(galmin, galmax)
+    gals = join_galaxies(galse, galint)
+    return gals
+
+
+def join_galaxies(gals1, gals2):
+    nam1 = {g["name"] for g in gals1}
+    nam2 = {g["name"] for g in gals2}
+    names = nam1 | nam2
+    gals = []
+    for n in names:
+        if n in nam1 - nam2:
+            g = next(g for g in gals1 if g["name"] == n)
+            gals.append(g)
+        elif n in nam2 - nam1:
+            g = next(g for g in gals2 if g["name"] == n)
+            gals.append(g)
+        else:
+            g1 = next(g for g in gals1 if g["name"] == n)
+            g2 = next(g for g in gals2 if g["name"] == n)
+            g = dict()
+            gk1 = set(g1.keys())
+            gk2 = set(g2.keys())
+            for k in gk1 | gk2:
+                if k in gk1 - gk2:
+                    g[k] = g1[k]
+                elif k in gk2 - gk1:
+                    g[k] = g2[k]
+                elif g1[k] == g2[k]:
+                    g[k] = g1[k]
+                elif type(g1[k]) == dict:
+                    g[k] = g1[k] | g2[k]
+                elif (
+                    type(g1[k]) == list
+                    and len(g1[k]) == len(g1["filters"])
+                    and len(g2[k]) == len(g2["filters"])
+                ):
+                    lisf = []
+                    lis = []
+                    f1 = g1["filters"]
+                    f2 = g2["filters"]
+                    for f in f1 + f2:
+                        if f not in lisf:
+                            if f in f1 and f not in f2:
+                                lis.append(g1[k][f1.index(f)])
+                            elif f in f2 and f not in f1:
+                                lis.append(g2[k][f2.index(f)])
+                            else:
+                                if type(g1[k][f1.index(f)]) == dict:
+                                    lis.append(g1[k][f1.index(f)] | g2[k][f2.index(f)])
+                                else:
+                                    lis.append(g1[k][f1.index(f)])
+                            lisf.append(f)
+                    g[k] = lis
+                else:
+                    g[k] = g1[k]
+            gals.append(g)
+    return gals
+
+
+def get_rfw_between(rang, galaxies):
+    galaxies = copy.deepcopy(galaxies)
+    gals = []
+    for g in galaxies:
+        filts = [float(f[1:-1]) / 100 for f in g["filters"]]
+        z = g["info"]["ZBEST"]
+        lmin = rang[0] * (1 + z)
+        lmax = rang[1] * (1 + z)
+        inds = [i for i in range(len(filts)) if (lmin <= filts[i] <= lmax)]
+        gal = dict()
+        for k in g:
+            if type(g[k]) == list and len(g[k]) == len(filts):
+                gal[k] = [g[k][i] for i in inds]
+            else:
+                gal[k] = g[k]
+        gals.append(gal)
+    return gals
+
+
 def get_rfw_difference(rfw, galaxies, M_mul, bad_add=True):
     """For a given rest frame wavelength and a set of galaxies, calculates
     what are the filters for each galaxy closest-matching the rfw and what is
