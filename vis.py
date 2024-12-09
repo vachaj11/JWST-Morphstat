@@ -15,6 +15,7 @@ import matplotlib.image as mpi
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+import scipy.stats as stats
 
 import resu
 import run
@@ -209,7 +210,7 @@ def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg", axis=None):
     )
 
 
-def plot_histogram(galaxies, value, nbins=None, filt="avg", axis=None):
+def plot_histogram(galaxies, value, nbins=None, pdf=True, filt="avg", axis=None):
     """Plots a histogram of requested value (for a given filter or averaged)
     for a given set of galaxies.
 
@@ -232,7 +233,7 @@ def plot_histogram(galaxies, value, nbins=None, filt="avg", axis=None):
         count, bins = np.histogram(vals, nbins)
     else:
         count, bins = np.histogram(vals)
-    if filt:
+    if pdf:
         ax.stairs(count / len(vals), bins, label=f"filter {filt} ({len(vals)})")
     else:
         ax.stairs(count / len(vals), bins, label=f"({len(vals)})")
@@ -419,7 +420,7 @@ def plot_histogram_filters(galaxies, value, filt="avg", pdf=False, axis=None):
     for filt in filts:
         for gs in galaxies:
             plot_histogram(gs, value, filt=filt, pdf=pdf, axis=ax)
-    ax.title(f"Histogram of {value}")
+    ax.set_title(f"Histogram of {value}")
 
 
 def plot_pic_value(
@@ -569,7 +570,7 @@ def plot_ref_hist(
     plt.draw()
 
 
-def plot_smooth2d_comp(gals_list, valuex, valuey, filt="avg", axis=None):
+def plot_smooth2d_comp(gals_list, valuex, valuey, filt="avg", axis=None, alpha=0.6):
     """!!!"""
     if axis is not None:
         ax = axis
@@ -596,10 +597,57 @@ def plot_smooth2d_comp(gals_list, valuex, valuey, filt="avg", axis=None):
         else:
             lab = f"({len(valsx)})"
         sns.kdeplot(
-            x=valsx, y=valsy, fill=True, cmap="OrRd", ax=ax, bw_adjust=0.3, alpha=0.6
+            x=valsx, y=valsy, fill=True, cmap="OrRd", ax=ax, bw_adjust=0.3, alpha=alpha
         )
     else:
         ax.set_title(f"Approximate distribution comparison of {valuex}")
+
+
+def plot_smooth2d_subt(gals, valuex, valuey, filt="avg", axis=None, rang=None):
+    """!!!"""
+    if axis is not None:
+        ax = axis
+    else:
+        fig, ax = plt.subplots()
+    vsx = []
+    vsy = []
+    vsg = []
+    for galaxies in gals:
+        valsx = []
+        valsy = []
+        valsg = []
+        for g in galaxies:
+            valy = resu.get_filter_or_avg(g, valuey, filt)
+            valx = resu.get_filter_or_avg(g, valuex, filt)
+            if valy and valx:
+                valsx.append(valx)
+                valsy.append(valy)
+                valsg.append(g["name"])
+        valsx, valsy, valsg = rem_bad_outliers([valsx, valsy, valsg])
+        valsy, valsx, valsg = rem_bad_outliers([valsy, valsx, valsg])
+        vsx.append(valsx)
+        vsy.append(valsy)
+        vsg.append(valsg)
+    if filt:
+        lab = f"filter {filt} ({len(valsx)})"
+    else:
+        lab = f"({len(valsx)})"
+    kde1 = stats.gaussian_kde([vsx[0], vsy[0]], bw_method=0.5)
+    kde2 = stats.gaussian_kde([vsx[1], vsy[1]], bw_method=0.5)
+    if rang is None:
+        xrang = (min(vsx[0] + vsx[1]), max(vsx[0] + vsx[1]))
+        yrang = (min(vsy[0] + vsy[1]), max(vsy[0] + vsy[1]))
+    else:
+        xrang = rang[0]
+        yrang = rang[1]
+    x, y = np.mgrid[xrang[0] : xrang[1] : 500j, yrang[0] : yrang[1] : 500j]
+    positions = np.vstack([x.ravel(), y.ravel()])
+
+    z1 = kde1(positions)
+    z2 = kde2(positions)
+    z_diff = z1 - z2
+    z_diff = z_diff.reshape(x.shape)
+    plt.contourf(x, y, z_diff, levels=9, cmap="coolwarm")
 
 
 def plot_points(
@@ -611,6 +659,8 @@ def plot_points(
     means = []
     medians = []
     stds = []
+    e33 = []
+    e68 = []
     if axis is not None:
         ax = axis
     else:
@@ -631,6 +681,8 @@ def plot_points(
         means.append(np.mean(vals))
         medians.append(np.median(vals))
         stds.append(np.std(vals, mean=medians[-1]))
+        e33.append(means[-1] - np.percentile(vals, 33))
+        e68.append(np.percentile(vals, 68) - means[-1])
     if len(xranges) == len(gals_list):
         x = [(i[0] + i[1]) / 2 for i in xranges]
         xe = [abs(i[1] - i[0]) / 2 for i in xranges]
@@ -640,17 +692,98 @@ def plot_points(
         ax.set_xlim(-0.5, len(names) - 0.5)
         ax.set_xticks(x, names)
     ax.errorbar(
-        x, medians, yerr=stds, fmt="none", capsize=5, ecolor="black", alpha=0.5 * yalpha
+        x,
+        means,
+        yerr=(e33, e68),
+        fmt="none",
+        capsize=5,
+        ecolor="black",
+        alpha=0.5 * yalpha,
     )
     ax.errorbar(
-        x, medians, xerr=xe, fmt="none", capsize=5, ecolor="black", alpha=0.5 * xalpha
+        x, means, xerr=xe, fmt="none", capsize=5, ecolor="black", alpha=0.5 * xalpha
+    )
+    ax.plot(x, means, marker="D", c="darkred", markersize=4, linestyle="", label="mean")
+    ax.plot(
+        x, medians, marker="_", c="darkred", markersize=12, linestyle="", label="median"
+    )
+    ax.plot(x, means, c="darkred", alpha=0.85, linewidth=1.3, linestyle="dotted")
+    ax.set_ylabel(value)
+    ax.legend()
+
+
+def plot_points_comp(gals_list, valuex, valuey, filt="avg", axis=None, ealpha=0.5):
+    """Plot a very simple plot with one point per set of galaxies and
+    appropriate error bars. !!!
+    """
+    means = [[], []]
+    medians = [[], []]
+    stds = [[], []]
+    e33 = [[], []]
+    e68 = [[], []]
+    if axis is not None:
+        ax = axis
+    else:
+        fig, ax = plt.subplots()
+    for galaxies in gals_list:
+        vals = [[], []]
+        valsg = []
+        for g in galaxies:
+            valx = resu.get_filter_or_avg(g, valuex, filt)
+            valy = resu.get_filter_or_avg(g, valuey, filt)
+            if valx and valy:
+                vals[0].append(valx)
+                vals[1].append(valy)
+                valsg.append(g["name"])
+        vals[0], vals[1], valsg = rem_bad_outliers([vals[0], vals[1], valsg])
+        if filt:
+            lab = f"filter {filt} ({len(vals)})"
+        else:
+            lab = f"({len(vals)})"
+        means[0].append(np.mean(vals[0]))
+        means[1].append(np.mean(vals[1]))
+        medians[0].append(np.median(vals[0]))
+        medians[1].append(np.median(vals[1]))
+        stds[0].append(np.std(vals[0], mean=medians[0][-1]))
+        stds[1].append(np.std(vals[1], mean=medians[1][-1]))
+        e33[0].append(means[0][-1] - np.percentile(vals[0], 33))
+        e33[1].append(means[1][-1] - np.percentile(vals[1], 33))
+        e68[0].append(np.percentile(vals[0], 68) - means[0][-1])
+        e68[1].append(np.percentile(vals[1], 68) - means[1][-1])
+
+    ax.errorbar(
+        means[0],
+        means[1],
+        xerr=(e33[0], e68[0]),
+        yerr=(e33[1], e68[1]),
+        fmt="none",
+        capsize=5,
+        ecolor="black",
+        alpha=ealpha,
     )
     ax.plot(
-        x, medians, marker="D", c="darkred", markersize=4, linestyle="", label="median"
+        means[0],
+        means[1],
+        marker="D",
+        c="darkred",
+        markersize=4,
+        linestyle="",
+        label="mean",
     )
-    ax.plot(x, means, marker="_", c="black", markersize=12, linestyle="", label="mean")
-    ax.plot(x, medians, c="darkred", alpha=0.85, linewidth=1.3, linestyle="dotted")
-    ax.set_ylabel(value)
+    ax.plot(
+        medians[0],
+        medians[1],
+        marker="+",
+        c="darkred",
+        markersize=12,
+        linestyle="",
+        label="median",
+    )
+    ax.plot(
+        means[0], means[1], c="darkred", alpha=0.85, linewidth=1.3, linestyle="dotted"
+    )
+    ax.set_xlabel(valuex)
+    ax.set_ylabel(valuey)
     ax.legend()
 
 
@@ -710,6 +843,7 @@ def points_multi_bins(
     axis=None,
     no_legend=False,
     include={0, 1, 2, 3},
+    balpha=0.6,
 ):
     """!!!"""
     il = list(include)
@@ -731,7 +865,9 @@ def points_multi_bins(
             axis=axs[n[0]],
         )
         if hist:
-            plot_smooth2d_comp((galaxies,), "ZBEST", value, axis=axs[n[0]])
+            plot_smooth2d_comp(
+                (galaxies,), "ZBEST", value, axis=axs[n[0]], alpha=balpha
+            )
         axs[n[0]].set_xlabel("$z$")
     if 1 in include:
         s = resu.get_bins_in_value(galaxies, "DMS", bins=7)
@@ -744,7 +880,7 @@ def points_multi_bins(
             yalpha=0.7,
         )
         if hist:
-            plot_smooth2d_comp((galaxies,), "DMS", value, axis=axs[n[1]])
+            plot_smooth2d_comp((galaxies,), "DMS", value, axis=axs[n[1]], alpha=balpha)
         axs[n[1]].set_xlabel("$\\log(SFR/SFR_{MS})$")
     if 2 in include:
         m = resu.get_bins_in_value(galaxies, "LMSTAR", bins=7)
@@ -757,7 +893,9 @@ def points_multi_bins(
             yalpha=0.6,
         )
         if hist:
-            plot_smooth2d_comp((galaxies,), "LMSTAR", value, axis=axs[n[2]])
+            plot_smooth2d_comp(
+                (galaxies,), "LMSTAR", value, axis=axs[n[2]], alpha=balpha
+            )
         axs[n[2]].set_xlabel("$\\log (M_\\star/M_\\odot)$")
     if 3 in include:
         r = resu.get_bins_in_value(galaxies, "H_RE", bins=7)
@@ -770,7 +908,7 @@ def points_multi_bins(
             yalpha=0.6,
         )
         if hist:
-            plot_smooth2d_comp((galaxies,), "H_RE", value, axis=axs[n[3]])
+            plot_smooth2d_comp((galaxies,), "H_RE", value, axis=axs[n[3]], alpha=balpha)
         axs[n[3]].set_xlabel("$r_\\mathrm{eff}\\, (\\mathrm{arcsec})$")
     for ax in axs:
         ax.label_outer()

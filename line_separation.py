@@ -163,7 +163,7 @@ def max_dif(v1, v2, v0, s0):
     rat = (yvals.max() - yvals.min()) / (xvals.max() - xvals.min())
     v = v0
     s = s0
-    r = 55
+    r = 100
     dist = np.abs(ldis(np.array(v1[0] + v2[0]), np.array(v1[1] + v2[1]), v0, s0))
     dd = np.min(dist[np.nonzero(dist)]) / (r + 1)
     dm = dist.min()
