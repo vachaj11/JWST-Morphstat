@@ -12,7 +12,7 @@ import numpy as np
 
 import resu
 
-ro = lambda s, an, r: np.tan(np.arctan(s / r) + an) * r
+ro = lambda s, an, r: np.tan(np.arctan(s / r) + an) * r + 10**-10
 mo = lambda v, s, d: v + np.array([1 / s, -1]) / np.sqrt(1 + 1 / s**2) * d
 
 
@@ -163,7 +163,7 @@ def max_dif(v1, v2, v0, s0):
     rat = (yvals.max() - yvals.min()) / (xvals.max() - xvals.min())
     v = v0
     s = s0
-    r = 100
+    r = 55
     dist = np.abs(ldis(np.array(v1[0] + v2[0]), np.array(v1[1] + v2[1]), v0, s0))
     dd = np.min(dist[np.nonzero(dist)]) / (r + 1)
     dm = dist.min()
@@ -182,7 +182,6 @@ def max_dif(v1, v2, v0, s0):
             dm = dist.min()
         else:
             dd *= r / 5
-
     return v, s, evalu(v1, v2, v, s)
 
 

@@ -26,6 +26,7 @@ Each element in the list under the key `"galaxies"` represents one galaxy and in
   - `"_MID_align"` - (Unimportant. Used at some point when transcribing some values between dictionaries) 
   - `"_radn"` - Recalculated (pixels to arcsec) value of statmorph Sersic fit radius to match the HST value 
   - `"flag"` - Furthermore the value for this parameter has been reevaluated and modified from the value provided by statmorph based on visual inspection
+  - `"_flag_sm"` - The original flag provided by statmorph. Moved from `"flag"` and taking values of 0, 1 and 2, denoting increasing unreliability of results.
 
 Filtering process
 -----------------

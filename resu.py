@@ -301,17 +301,22 @@ def get_filter_or_avg(galaxy, value, filt="avg"):
             extraction failed for whatever reason (e.g. the specified filter
             is not present for the given galaxy).
     """
+    if value[:4] == "!log":
+        value = value[4:]
+        lmap = lambda x: float(np.log(max(x, 0)))
+    else:
+        lmap = lambda x: x
     if filt == "avg":
-        val = 0
+        val = None
         for i in range(len(galaxy["filters"])):
             for k in galaxy.keys():
                 f = galaxy[k]
                 if type(f) == list and len(f) == len(galaxy["filters"]):
                     if type(f[i]) == dict and value in f[i].keys():
-                        val += float(f[i][value])
-        if val:
+                        val = float(f[i][value])
+        if val is not None:
             val = val / len(galaxy["filters"])
-            return val
+            return lmap(val)
     if filt[:3] == "rfw":
         rfw = float(filt[3:])
         filters = [int(f[1:-1]) for f in galaxy["filters"]]
@@ -329,9 +334,9 @@ def get_filter_or_avg(galaxy, value, filt="avg"):
                 and type(galaxy[k][i]) == dict
             ):
                 if value in galaxy[k][i].keys():
-                    return float(galaxy[k][i][value])
+                    return lmap(float(galaxy[k][i][value]))
     if value in galaxy["info"].keys():
-        return galaxy["info"][value]
+        return lmap(galaxy["info"][value])
     return None
 
 
@@ -416,7 +421,12 @@ def get_galaxy(name, psf_res=None):
 
 
 def get_optim_rfw(
-    galaxies, M_mul=2.0, rfw_range=(0.25, 2.70), fixed_rfw=None, bad=True
+    galaxies,
+    M_mul=2.0,
+    rfw_range=(0.25, 2.70),
+    fixed_rfw=None,
+    bad=True,
+    filter_range=(0.5, 5),
 ):
     """Determines the optimum rest frame wavelength to be used for the
     provided set of galaxies.
@@ -443,9 +453,13 @@ def get_optim_rfw(
     gals_best = []
     rfw_diff = []
     if fixed_rfw is not None:
-        return get_rfw_difference(fixed_rfw, galaxies, M_mul, bad_add=bad)[1]
+        return get_rfw_difference(
+            fixed_rfw, galaxies, M_mul, bad_add=bad, rang=filter_range
+        )[1]
     for v in vals:
-        diff, gals = get_rfw_difference(v, galaxies, M_mul, bad_add=bad)
+        diff, gals = get_rfw_difference(
+            v, galaxies, M_mul, bad_add=bad, rang=filter_range
+        )
         if diff < diff_best:
             v_best = v
             diff_best = diff
@@ -538,7 +552,7 @@ def get_rfw_between(rang, galaxies):
     return gals
 
 
-def get_rfw_difference(rfw, galaxies, M_mul, bad_add=True):
+def get_rfw_difference(rfw, galaxies, M_mul, bad_add=True, rang=(0.5, 5)):
     """For a given rest frame wavelength and a set of galaxies, calculates
     what are the filters for each galaxy closest-matching the rfw and what is
     the sum of their differences to the rfw.
@@ -557,7 +571,9 @@ def get_rfw_difference(rfw, galaxies, M_mul, bad_add=True):
         diffs = []
         for f in filts:
             v_i = int(f[1:-1]) / 100
-            if f[-1:] == "W":
+            if v_i <= rang[0] or v_i >= rang[1]:
+                diffs.append((abs(v_r - v_i) / v_r + 1) * 1000)
+            elif f[-1:] == "W":
                 diffs.append(abs(v_r - v_i) / v_r)
             else:
                 diffs.append(M_mul * abs(v_r - v_i) / v_r)
@@ -591,7 +607,7 @@ def get_rfw_difference(rfw, galaxies, M_mul, bad_add=True):
     return diff / len(gals) * len(galaxies), gals
 
 
-def get_maximal_psf_width(galaxies, return_full=True):
+def get_maximal_psf_width(galaxies, return_full=True, enforce_filter=None):
     """Determines the maximal width of psf (in kpc) present in the given
     set of galaxies.
 
@@ -619,15 +635,16 @@ def get_maximal_psf_width(galaxies, return_full=True):
     for g in galaxies:
         px_size = psfm.get_pixel_size(g["info"]["ZBEST"])
         for f in g["filters"]:
-            psf_fwhms_px = psfm.get_psf_fwhm(f)
-            if psf_fwhms_px is not None:
-                psf_fwhm_px = np.sum(psf_fwhms_px) / 2
-                psf_fwhm = px_size * psf_fwhm_px
-                if psf_fwhm >= max_fwhm:
-                    max_fwhm = psf_fwhm
-                    if return_full:
-                        psf = psfm.get_psf(f)
-                        psf_m = [psf, px_size, psf_fwhm]
+            if enforce_filter in {f, None}:
+                psf_fwhms_px = psfm.get_psf_fwhm(f)
+                if psf_fwhms_px is not None:
+                    psf_fwhm_px = np.sum(psf_fwhms_px) / 2
+                    psf_fwhm = px_size * psf_fwhm_px
+                    if psf_fwhm >= max_fwhm:
+                        max_fwhm = psf_fwhm
+                        if return_full:
+                            psf = psfm.get_psf(f)
+                            psf_m = [psf, px_size, psf_fwhm]
     if psf_m:
         return psf_m
     else:
@@ -648,17 +665,20 @@ def manual_reev_c(
     cv2.namedWindow("img", cv2.WINDOW_NORMAL)
     cv2.waitKey(0)
     i = 0
+    for g in gals:
+        for l in range(len(g["filters"])):
+            if "_flag_sm" not in g["frames"][l].keys():
+                g["frames"][l]["_flag_sm"] = g["frames"][l]["flag"]
     while i < len(gals):
         g = gals[i]
         for l in range(len(g["filters"])):
-            s = False
             name = g["name"] + "_" + g["filters"][l]
             ims = cv2.imread(im_path.replace("name", name))
             if ims is not None:
                 cv2.imshow("img", ims)
                 cv2.waitKey(1)
                 inp = input(
-                    f"Value for {g['name']}_{g['filters'][l]} ({i}/{len(gals)}): "
+                    f"Value for {g['name']}_{g['filters'][l]} ({i}/{len(gals)}; previously {g["frames"][l]["flag"]}  and originally {g["frames"][l]["_flag_sm"]}): "
                 )
                 if inp == "<":
                     i -= 2
