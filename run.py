@@ -7,11 +7,8 @@ frames, calling statmorph calculation, and translating/reformating the results
 of the calculation back into easily saved and accesible format.
 """
 
-import time
-
-tg0 = time.time()
-
 import json
+import time
 import warnings
 from multiprocessing import Manager, Process, cpu_count
 
@@ -23,7 +20,12 @@ import stmo
 
 
 def galaxies_data(
-    gals, path_out=None, return_object=False, picture_path=None, psf_res=None
+    gals,
+    path_out=None,
+    return_object=False,
+    picture_path=None,
+    psf_res=None,
+    multiprocessing=True,
 ):
     """Main function that runs statmorph computation for an inputted list of
     galaxies, tracks the progress, saves the results, etc.
@@ -58,38 +60,52 @@ def galaxies_data(
             :arg:`return_object` option, each representing one galaxy with the
             calculation results.
     """
-    t0 = time.time()
-    manag = Manager()
-    galaxies = manag.dict()
-    objects = manag.dict()
-    proc = cpu_count()
-    active = []
-    latest = 0
-    while latest < len(gals) or len(active) > 0:
-        pr_no = min(proc, len(gals) - latest)
-        if len(active) < pr_no:
-            for i in range(pr_no - len(active)):
-                args = (
-                    gals[latest],
-                    psf_res,
-                    (latest, len(gals)),
-                    picture_path,
-                    return_object,
-                    galaxies,
-                    objects,
-                )
-                t = Process(target=process_galaxy, args=args)
-                t.start()
-                active.append(t)
-                latest += 1
-        for t in active:
-            if not t.is_alive():
-                t.terminate()
-                active.remove(t)
-        time.sleep(0.5)
-        if path_out is not None and int(time.time()) % 300 == 0:
-            save_as_json({"galaxies": list(galaxies.values())}, path_out)
-            print(f"Time: {time.time()-t0:.1f}")
+    if multiprocessing and not return_object:
+        manag = Manager()
+        galaxies = manag.dict()
+        objects = manag.dict()
+        proc = cpu_count()
+        active = []
+        latest = 0
+        while latest < len(gals) or len(active) > 0:
+            pr_no = min(proc, len(gals) - latest)
+            if len(active) < pr_no:
+                for i in range(pr_no - len(active)):
+                    args = (
+                        gals[latest],
+                        psf_res,
+                        (latest, len(gals)),
+                        picture_path,
+                        return_object,
+                        galaxies,
+                        objects,
+                    )
+                    t = Process(target=process_galaxy, args=args)
+                    t.start()
+                    active.append(t)
+                    latest += 1
+            for t in active:
+                if not t.is_alive():
+                    t.terminate()
+                    active.remove(t)
+            time.sleep(0.5)
+            if path_out is not None and int(time.time()) % 300 == 0:
+                save_as_json({"galaxies": list(galaxies.values())}, path_out)
+    else:
+        galaxies = dict()
+        objects = dict()
+        for i in range(len(gals)):
+            process_galaxy(
+                gals[i],
+                psf_res,
+                (i, len(gals)),
+                picture_path,
+                return_object,
+                galaxies,
+                objects,
+            )
+            if path_out is not None and i % 10 == 0:
+                save_as_json({"galaxies": list(galaxies.values())}, path_out)
 
     if path_out is not None:
         save_as_json({"galaxies": list(galaxies.values())}, path_out)
@@ -101,17 +117,13 @@ def galaxies_data(
 
 def process_galaxy(galaxy, psf_res, index, p_path, r_object, galaxies, objects):
     t0 = time.time()
-    print(f"Import time: {t0-tg0}")
     gdata = calculate_stmo(galaxy, psf_res)
-    t1 = time.time()
-    print(f"Statmorph time: {t1-t0}")
     galaxies[index[0]] = get_galaxy_data(gdata)
     if r_object:
         objects[index[0]] = gdata
     if p_path is not None:
         for f in gdata.frames:
             f.show_stmo(save_path=p_path.replace("name", (gdata.name + "_" + f.name)))
-    print(f"Remaining time: {time.time()-t1}")
     print(
         "Finished galaxy {} in {:.2f} s ({} out of {})".format(
             gdata.name, time.time() - t0, index[0] + 1, index[1]
