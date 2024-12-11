@@ -20,7 +20,7 @@ plt.rcParams.update(
 """To generate the plots, first update the paths bellow to correspond to the location of the output/input dictionaries. 
 """
 
-raw = run.fetch_json("dict_out/out_full_matched_2_k.json")["galaxies"]
+raw = run.fetch_json("dict_out/out_full_matched_5_m.json")["galaxies"]
 bulges = run.fetch_json("dict_in/n4_Bulge.json")["galaxies"]
 mergers = run.fetch_json("dict_in/n4_Interacting-Merger.json")["galaxies"]
 sers = run.fetch_json("dict_out/out_full_444.json")["galaxies"]
@@ -85,7 +85,7 @@ def mergers_separation():
         c="#b7010154", markeredgecolor="#b701018b", markersize=7, alpha=0.5
     )
     L = axs.legend()
-    L.texts[0].set_text("non-mergers (" + L.texts[0]._text.split("(")[-1])
+    L.texts[0].set_text("others (" + L.texts[0]._text.split("(")[-1])
     L.texts[1].set_text("interact./mergers (" + L.texts[1]._text.split("(")[-1])
     axs.set_xlim(x)
     axs.set_ylim(0.38, 0.64)
@@ -107,7 +107,7 @@ def mergers_separation():
 def mergers_separation_a():
     point, slope, diff = ls.max_sep(filmm, filom, "A", "A")
     vis.plot_ref_hist(
-        (filom, filmm), "A", pdf=True, bins=15, names=["non-mergers", "mergers"]
+        (filom, filmm), "A", pdf=True, bins=13, names=["non-mergers", "mergers"]
     )
     x = (point[1] - point[0] * slope) / (1 - slope)
     fig = plt.gcf()
@@ -159,7 +159,7 @@ def mergers_separation_a():
     axs.lines[0].set(c="#053970CC", linewidth=2.5)
     axs.lines[1].set(c="#B70101CC", linewidth=2.5)
     L = axs.legend()
-    L.texts[0].set_text("non-mergers (" + L.texts[0]._text.split("(")[-1])
+    L.texts[0].set_text("others (" + L.texts[0]._text.split("(")[-1])
     L.texts[1].set_text("interact./mergers (" + L.texts[1]._text.split("(")[-1])
     axs.set_xlim(-0.1, 0.8)
     axs.set_ylim(0, 6.5)
@@ -250,48 +250,6 @@ def bulges_separation():
     fig.set_layout_engine(layout="tight")
 
 
-def ginim20_redshift():
-    fig, axs = plt.subplots()
-    z = resu.get_separate_in_value(fil, "z bin")
-    rang = ((-2.3, -0.8), (0.38, 0.64))
-    vis.plot_smooth2d_subt(
-        (z["high_z"], z["low_z"]), "M20", "Gini", axis=axs, rang=rang
-    )
-    vis.plot_correlation_filters((fil,), "M20", "Gini", axis=axs)
-    vis.plot_points_comp((z["high_z"],), "M20", "Gini", axis=axs, ealpha=0.8)
-    vis.plot_points_comp((z["low_z"],), "M20", "Gini", axis=axs, ealpha=0.8)
-
-    axs.lines[0].set(marker=".", markersize=1.5, c="black", alpha=0.4)
-    axs.collections[0].set(alpha=0.5)
-    axs.set_xlabel("M$_{20}$")
-    axs.set_ylabel("Gini")
-    axs.set_title("")
-    axs.set_xlim(rang[0])
-    axs.set_ylim(rang[1])
-    axs.tick_params(
-        axis="both",
-        which="major",
-        bottom=True,
-        top=False,
-        left=True,
-        right=False,
-        direction="inout",
-        size=6,
-        labelsize=14,
-    )
-    axs.lines[0].set(label="_")
-    axs.lines[12].set(c="darkblue")
-    axs.lines[13].set(c="darkblue")
-    L = axs.legend()
-    L.texts[0].set_text("high $z$ mean")
-    L.texts[1].set_text("high $z$ median")
-    L.texts[2].set_text("low $z$ mean")
-    L.texts[3].set_text("low $z$ median")
-
-    fig.set_size_inches(5.5, 5)
-    fig.set_layout_engine(layout="tight")
-
-
 def optimal_rfw():
     fullg = []
     # full = resu.get_rfw_range((0.5,1.37), full)
@@ -307,7 +265,7 @@ def optimal_rfw():
     for g in fullg:
         g["fileInfo"][0]["_wave"] = int(g["filters"][0][1:-1]) / 100
     for g in raw:
-        g["frames"][0]["_wave"] = g["frames"][0]["_wavelength"] / 100
+        g["frames"][0]["_wave"] = g["frames"][0]["_wavelength"]
     vis.plot_value_filters(fullg, "ZBEST", "_wave")
     fig = plt.gcf()
     axs = plt.gca()
@@ -466,7 +424,9 @@ def ren_et_al():
         mfc="green",
         marker="D",
         markersize=4,
-        linestyle="",
+        c="darkgreen",
+        linestyle="dotted",
+        linewidth=1.3,
     )
     axes[2].plot(
         yao_a[0],
@@ -475,7 +435,9 @@ def ren_et_al():
         mfc="green",
         marker="D",
         markersize=4,
-        linestyle="",
+        c="darkgreen",
+        linestyle="dotted",
+        linewidth=1.3,
     )
     axes[4].plot(
         yao_g[0],
@@ -484,7 +446,9 @@ def ren_et_al():
         mfc="green",
         marker="D",
         markersize=4,
-        linestyle="",
+        c="darkgreen",
+        linestyle="dotted",
+        linewidth=1.3,
         label="Yao et al.",
     )
     axes[6].plot(
@@ -494,8 +458,11 @@ def ren_et_al():
         mfc="green",
         marker="D",
         markersize=4,
-        linestyle="",
+        c="darkgreen",
+        linestyle="dotted",
+        linewidth=1.3,
     )
+    """
     axes[0].plot(
         yao_c[0], yao_c[1], c="darkgreen", linestyle="dotted", linewidth=1.3, alpha=0.8
     )
@@ -508,6 +475,7 @@ def ren_et_al():
     axes[6].plot(
         yao_m[0], yao_m[1], c="darkgreen", linestyle="dotted", linewidth=1.3, alpha=0.8
     )
+    """
     """
     for i in range(8):
         yl = axes[i].lines[0].get_ydata()
@@ -543,6 +511,13 @@ def ren_et_al():
             size=6,
             labelsize=14,
         )
+
+    for i in range(8):
+        axes[i].lines[4].set(linestyle="--", linewidth=1.5)
+        axes[i].lines[6].set(linewidth=2)
+        if i % 2 == 0:
+            axes[i].lines[10].set(linewidth=2)
+
     axes[4].lines[4].set_label("_mean")
     axes[4].lines[5].set_label("_median")
     L = axes[4].legend(loc=3, fontsize=12)
@@ -576,7 +551,7 @@ def MID_classification():
     axes[2].set_ylim(-0.13, 0.8)
     axes[4].set_ylim(-0.04, 0.4)
     axes[4].set_xticks([0, 1], ["without bulge", "with bulge"])
-    axes[5].set_xticks([0, 1], ["non-merg.", "interac./merg."])
+    axes[5].set_xticks([0, 1], ["others", "interact./mergers"])
     for ax in axes:
         ax.tick_params(
             axis="both",
@@ -682,9 +657,9 @@ def ginim20_class():
     axes[0].set_ylim(-0.18, 0.1)
     axes[2].set_ylim(-1.3, 0.8)
     axes[2].set_xticks([0, 1], ["without bulge", "with bulge"])
-    axes[3].set_xticks([0, 1], ["non-merg.", "interac./merg."])
-    axes[0].set_ylabel("Merger st. S(G, M20)")
-    axes[2].set_ylabel("Bulge st. F(G, M20)")
+    axes[3].set_xticks([0, 1], ["others", "interact./mergers"])
+    axes[0].set_ylabel("Merger st. $S(G, M_{20}$)")
+    axes[2].set_ylabel("Bulge st. $F(G, M_{20}$)")
     axes[0].patch.set_alpha(0)
     axes[3].patch.set_alpha(0)
     for i in {"top", "bottom", "left", "right"}:
@@ -845,7 +820,8 @@ if __name__ == "__main__":
     # MID_classification()
     # sersic_comparison()
     # ginim20_class()
-    ginim20_redshift()
+    # ginim20_redshift()
+    # ca_redshift()
     names = [
         "COS4_02049",
         "COS4_02167",
@@ -854,12 +830,13 @@ if __name__ == "__main__":
         "U4_26324",
         "U4_21440",
     ]
+    # masking_examples_6(names)
     names = [
         "COS4_02049",
         "COS4_02167",
         "U4_26324",
         "U4_21440",
     ]
-    # masking_examples_6(names)
     # masking_examples_4(names)
+    sup_mid_bins()
     plt.show()

@@ -14,8 +14,8 @@ import warnings
 import matplotlib.image as mpi
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 import scipy.stats as stats
+import seaborn as sns
 
 import resu
 import run
@@ -81,7 +81,7 @@ def plot_value(galaxies, valuex, valuey, filt="avg", axis=None):
     valsg = []
     for g in galaxies:
         valy = resu.get_filter_or_avg(g, valuey, filt)
-        if valy:
+        if valy is not None:
             valsy.append(valy)
             valsx.append(g["info"][valuex])
             valsg.append(g["name"])
@@ -126,7 +126,7 @@ def plot_correlation(
     for g in galaxies:
         valy = resu.get_filter_or_avg(g, valuey, filt)
         valx = resu.get_filter_or_avg(g, valuex, filt)
-        if valy and valx:
+        if valy is not None and valx is not None:
             valsy.append(valy)
             valsx.append(valx)
             valsg.append(g["name"])
@@ -179,7 +179,7 @@ def plot_value_difference(gals1, gals2, valuex, valuey, filt="avg", axis=None):
         else:
             val1 = resu.get_filter_or_avg(galf1[i], valuey, filt)
             val2 = resu.get_filter_or_avg(galf2[i], valuey, filt)
-        if val1 and val2:
+        if val1 is not None and val2 is not None:
             valsd.append(val2 - val1)
             valsx.append(galf1[i]["info"][valuex])
             valsg.append(galf1[i]["name"])
@@ -226,7 +226,7 @@ def plot_histogram(galaxies, value, nbins=None, pdf=True, filt="avg", axis=None)
     vals = []
     for g in galaxies:
         val = resu.get_filter_or_avg(g, value, filt)
-        if val:
+        if val is not None:
             vals.append(val)
     vals = rem_bad_outliers([vals])[0]
     if nbins is not None:
@@ -267,7 +267,7 @@ def plot_hist_comp(
         valsg = []
         for g in galaxies:
             val = resu.get_filter_or_avg(g, value, filt)
-            if val:
+            if val is not None:
                 vals.append(val)
                 valsg.append(g["name"])
         vals = rem_bad_outliers([vals, valsg])[0]
@@ -300,7 +300,7 @@ def plot_smooth_comp(gals_list, value, filt="avg", pdf=False, nsig=25, axis=None
         valsg = []
         for g in galaxies:
             val = resu.get_filter_or_avg(g, value, filt)
-            if val:
+            if val is not None:
                 vals.append(val)
                 valsg.append(g["name"])
         vals = rem_bad_outliers([vals, valsg])[0]
@@ -490,7 +490,7 @@ def plot_sersic(galsout, galsin, valueout, filt="avg", axis=None):
     for i in range(len(galfout)):
         val1 = resu.get_filter_or_avg(galfout[i], valueout, filt)
         val2 = resu.get_filter_or_avg(galfin[i], valuein, filt)
-        if val1 and val2:
+        if val1 is not None and val2 is not None:
             valsout.append(val1)
             valsin.append(val2)
             valsg.append(galfout[i]["name"])
@@ -586,7 +586,7 @@ def plot_smooth2d_comp(gals_list, valuex, valuey, filt="avg", axis=None, alpha=0
                 valx = g["info"][valuex]
             except:
                 valx = None
-            if valy and valx:
+            if valy is not None and valx is not None:
                 valsx.append(valx)
                 valsy.append(valy)
                 valsg.append(g["name"])
@@ -619,7 +619,7 @@ def plot_smooth2d_subt(gals, valuex, valuey, filt="avg", axis=None, rang=None):
         for g in galaxies:
             valy = resu.get_filter_or_avg(g, valuey, filt)
             valx = resu.get_filter_or_avg(g, valuex, filt)
-            if valy and valx:
+            if valy is not None and valx is not None:
                 valsx.append(valx)
                 valsy.append(valy)
                 valsg.append(g["name"])
@@ -670,7 +670,7 @@ def plot_points(
         valsg = []
         for g in galaxies:
             val = resu.get_filter_or_avg(g, value, filt)
-            if val:
+            if val is not None:
                 vals.append(val)
                 valsg.append(g["name"])
         vals, valsg = rem_bad_outliers([vals, valsg])
@@ -681,8 +681,8 @@ def plot_points(
         means.append(np.mean(vals))
         medians.append(np.median(vals))
         stds.append(np.std(vals, mean=medians[-1]))
-        e33.append(means[-1] - np.percentile(vals, 33))
-        e68.append(np.percentile(vals, 68) - means[-1])
+        e33.append(medians[-1] - np.percentile(vals, 33))
+        e68.append(np.percentile(vals, 68) - medians[-1])
     if len(xranges) == len(gals_list):
         x = [(i[0] + i[1]) / 2 for i in xranges]
         xe = [abs(i[1] - i[0]) / 2 for i in xranges]
@@ -693,7 +693,7 @@ def plot_points(
         ax.set_xticks(x, names)
     ax.errorbar(
         x,
-        means,
+        medians,
         yerr=(e33, e68),
         fmt="none",
         capsize=5,
@@ -703,11 +703,20 @@ def plot_points(
     ax.errorbar(
         x, means, xerr=xe, fmt="none", capsize=5, ecolor="black", alpha=0.5 * xalpha
     )
-    ax.plot(x, means, marker="D", c="darkred", markersize=4, linestyle="", label="mean")
+    ax.plot(
+        x,
+        means,
+        marker="D",
+        c="darkred",
+        markersize=4,
+        linestyle="--",
+        label="mean",
+        linewidth=1.5,
+    )
     ax.plot(
         x, medians, marker="_", c="darkred", markersize=12, linestyle="", label="median"
     )
-    ax.plot(x, means, c="darkred", alpha=0.85, linewidth=1.3, linestyle="dotted")
+    # ax.plot(x, means, c="darkred", alpha=0.85, linewidth=1.3, linestyle="dotted")
     ax.set_ylabel(value)
     ax.legend()
 
@@ -731,7 +740,7 @@ def plot_points_comp(gals_list, valuex, valuey, filt="avg", axis=None, ealpha=0.
         for g in galaxies:
             valx = resu.get_filter_or_avg(g, valuex, filt)
             valy = resu.get_filter_or_avg(g, valuey, filt)
-            if valx and valy:
+            if valx is not None and valy is not None:
                 vals[0].append(valx)
                 vals[1].append(valy)
                 valsg.append(g["name"])
@@ -801,7 +810,7 @@ def plot_violin(gals_list, value, filt="avg", names=[], xranges=[], axis=None):
         valsg = []
         for g in galaxies:
             val = resu.get_filter_or_avg(g, value, filt)
-            if val:
+            if val is not None:
                 vals.append(val)
                 valsg.append(g["name"])
         vals, valsg = rem_bad_outliers([vals, valsg])
@@ -1070,5 +1079,7 @@ def plot_grided(galaxies, values, len_funct, funct, title="", *args, **kwargs):
     axs = gs.subplots(sharey="row", sharex="col")
     for i in range(len(values)):
         funct(galaxies, values[i], axis=axs[i], no_legend=True, *args, **kwargs)
+    for ax in axs.flatten():
+        ax.patch.set_alpha(0)
     fig.suptitle(title)
     fig.tight_layout()

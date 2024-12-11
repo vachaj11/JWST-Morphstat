@@ -20,6 +20,32 @@ shiftsi = [
     / 2
     / (-0.65),
 ]
+
+
+def adjust_and_combine(vals1, vals2, inds):
+    v1x = np.array(vals1[0])
+    v2x = np.array(vals2[0])
+    v1y = shiftsi[inds[0]](vals1[1])
+    v2y = shiftsi[inds[1]](vals2[1])
+    v2ya = []
+    for i in range(len(v1x)):
+        vx = v1x[i]
+        if vx <= v2x.min():
+            v2ya.append(v2y[np.argmin(v2x)])
+        elif vx >= max(v2x):
+            v2ya.append(v2y[np.argmax(v2x)])
+        else:
+            v2xs = v2x[np.argmin((vx - v2x)[(vx - v2x) >= 0])]
+            v2xl = v2x[np.argmin((v2x - vx)[(v2x - vx) >= 0])]
+            v2ys = v2y[np.where(v2x == v2xs)[0][0]]
+            v2yl = v2y[np.where(v2x == v2xl)[0][0]]
+            if v2xs == v2xl:
+                v2ya.append(v2ys)
+            else:
+                v2ya.append(v2ys + (vx - v2xs) / (v2xl - v2xs) * (v2yl - v2ys))
+    return (v1y, np.array(v2ya))
+
+
 ren_cr = (
     [
         0.7643450898897748,
@@ -684,6 +710,9 @@ ren_am = (
         0.4030107678800295,
     ],
 )
+
+ren_mg = adjust_and_combine(ren_mr, ren_gr, [3, 2])
+ren_ca = adjust_and_combine(ren_cr, ren_ar, [0, 1])
 
 yao_m = (
     [1.0613636363636363, 1.6545454545454545, 2.3977272727272725],
