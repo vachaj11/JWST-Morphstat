@@ -47,14 +47,23 @@ def get_galaxy_entry(galaxies_full, gal_name, fil_names=None):
             if len(ind) < len(g["filters"]):
                 ind.reverse()
                 for i in ind:
-                    for nam in {"filters, files, fileInfo, frames"}:
-                        if nam in g.keys():
-                            g[name].pop(i)
+                    fl = len(g["filters"])
+                    for nam in g.keys():
+                        if type(g[nam]) == list and len(g[nam]) == fl:
+                            g[nam].pop(i)
                 return g
             else:
                 return None
     return None
 
+def get_galaxies_filter(galaxies_full, filt):
+    """Gets galaxies with a specified filter."""
+    gals = []
+    for g in galaxies_full:
+        gf = get_galaxy_entry(galaxies_full, g["name"], fil_names=[filt])
+        if gf is not None:
+            gals.append(gf)
+    return gals
 
 def get_bad_frames(galaxy, strength="normal"):
     """Gets indexes of bad frames in a galaxy.
