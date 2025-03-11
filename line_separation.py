@@ -30,14 +30,14 @@ def get_vals(gal, valx, valy):
     return vsx, vsy, galo
 
 
-def best_parameters_l(gal1, gal2, parameters):
+def best_parameters_l(gal1, gal2, parameters, e = None):
     parameters = list(parameters)
     vals = {}
     start = time.time()
     for i1 in range(len(parameters)):
         for i2 in range(i1, len(parameters)):
             starti = time.time()
-            p, s, (d, _) = max_sep(gal1, gal2, parameters[i1], parameters[i2])
+            p, s, (d, _) = max_sep(gal1, gal2, parameters[i1], parameters[i2], e = e)
             vals[(parameters[i1], parameters[i2])] = [p, s, d]
 
             print(
@@ -47,7 +47,7 @@ def best_parameters_l(gal1, gal2, parameters):
     return vals
 
 
-def best_parameters_t(gal1, gal2, pars):
+def best_parameters_t(gal1, gal2, pars, e = None):
     pars = list(pars)
     vals = {}
     ts = {}
@@ -56,7 +56,7 @@ def best_parameters_t(gal1, gal2, pars):
         for i2 in range(i1, len(pars)):
             vals[(pars[i1], pars[i2])] = None
             ts[(pars[i1], pars[i2])] = Thread(
-                target=threadp, args=(vals, gal1, gal2, pars[i1], pars[i2])
+                target=threadp, args=(vals, gal1, gal2, pars[i1], pars[i2]), kwargs = {"e":e}
             )
             ts[(pars[i1], pars[i2])].start()
     for k in ts:
@@ -65,7 +65,7 @@ def best_parameters_t(gal1, gal2, pars):
     return vals
 
 
-def best_parameters(gal1, gal2, pars):
+def best_parameters(gal1, gal2, pars, e = None):
     pars = list(pars)
     manag = Manager()
     vals = manag.dict()
@@ -75,7 +75,7 @@ def best_parameters(gal1, gal2, pars):
         for i2 in range(i1, len(pars)):
             vals[(pars[i1], pars[i2])] = None
             ts[(pars[i1], pars[i2])] = Process(
-                target=threadp, args=(vals, gal1, gal2, pars[i1], pars[i2])
+                target=threadp, args=(vals, gal1, gal2, pars[i1], pars[i2]), kwargs = {"e":e}
             )
             ts[(pars[i1], pars[i2])].start()
     for k in ts:
@@ -84,14 +84,14 @@ def best_parameters(gal1, gal2, pars):
     return vals
 
 
-def threadp(vals, gal1, gal2, p1, p2):
+def threadp(vals, gal1, gal2, p1, p2, e = None):
     start = time.time()
-    p, s, (d, _) = max_sep(gal1, gal2, p1, p2)
+    p, s, (d, _, _) = max_sep(gal1, gal2, p1, p2, e = e)
     vals[(p1, p2)] = [p, s, d]
     print(f"Finished {p1} X {p2} with {d} in {time.time()-start} s.")
 
 
-def max_sep(gal1, gal2, valx, valy, param=None):
+def max_sep(gal1, gal2, valx, valy, param=None, e = None):
     """For two sets of galaxies and two parameters, finds a line which best
     separates the two sets of galaxies in the parameter space of the two
     parameters.
@@ -106,7 +106,7 @@ def max_sep(gal1, gal2, valx, valy, param=None):
     # v0 = np.array(((v1m[0] + v2m[0]) / 2, (v1m[1] + v2m[1]) / 2))
     # slope = (v1m[1] - v2m[1]) / (v1m[0] - v2m[0])
     # s0 = -1 / slope
-    vo, so, mdif = max_dif_c((val1x, val1y), (val2x, val2y), vm)
+    vo, so, mdif = max_dif_c((val1x, val1y), (val2x, val2y), vm, e = e)
     if param is not None:
         for i in range(len(gal1f)):
             gal1f[i]["frames"][0][param] = ldis(val1x[i], val1y[i], vo, so)
@@ -119,24 +119,23 @@ def get_above_line(gal, valx, valy, point, slope):
     vx, vy, _ = get_vals(gal, valx, valy)
     vx = np.array(vx)
     vy = np.array(vy)
-    dist = ldis(vx, vy, point, slope)
-    ratio = (dist > 0).sum() / len(dist)
-    return ratio
+    mdif = evalu([vx, vy], [vx, vy], point, slope, e = None)
+    return mdif
 
 
-def max_dif_c(v1, v2, vm):
+def max_dif_c(v1, v2, vm, e = None):
     if v1[0] == v1[1]:
-        vo, so, mdif = max_dif_s(v1, v2)
+        vo, so, mdif = max_dif_s(v1, v2, e = e)
     else:
-        voh, soh, mdifh = max_dif_s(v1, v2, 1)
-        vov, sov, mdifv = max_dif_s(v1, v2, 0)
-        vop, sop, mdifp = max_dif_2(v1, v2)
+        voh, soh, mdifh = max_dif_s(v1, v2, 1, e = e)
+        vov, sov, mdifv = max_dif_s(v1, v2, 0, e = e)
+        vop, sop, mdifp = max_dif_2(v1, v2, e = e)
         options = [(vop, sop, mdifp), (voh, 10**-10, mdifh), (vov, 10**10, mdifv)]
         voi, soi, mdifi = max(options, key=lambda x: x[2][0])
         vom = voi + (np.array([1, soi]) * (vm - voi)).sum() * np.array([1, soi]) / (
             1 + soi**2
         )
-        vo, so, mdif = max_dif(v1, v2, vom, soi)
+        vo, so, mdif = max_dif(v1, v2, vom, soi, e = e)
         if mdifi > mdif:
             print("Just checking...:")
             print(f"{vo} -> {voi} , {so} -> {soi} , {mdif[0]} -> {mdifi[0]}")
@@ -144,7 +143,7 @@ def max_dif_c(v1, v2, vm):
     return vo, so, mdif
 
 
-def max_dif_s(v1, v2, ind=0):
+def max_dif_s(v1, v2, ind=0, e = None):
     v1i = (v1[ind], v1[ind])
     v2i = (v2[ind], v2[ind])
     vs = np.concatenate((v1i[0], v2i[0]))
@@ -152,12 +151,12 @@ def max_dif_s(v1, v2, ind=0):
     for i in range(len(vs)):
         v = np.array([vs[i], vs[i]])
         s = 2
-        vals.append([v, s, evalu(v1i, v2i, v, s)])
+        vals.append([v, s, evalu(v1i, v2i, v, s, e = e)])
     m = max(vals, key=lambda k: k[2][0])
-    return m[0], m[1], m[2]
+    return (i for i in m)
 
 
-def max_dif(v1, v2, v0, s0):
+def max_dif(v1, v2, v0, s0, e = None):
     xvals = np.concatenate((v1[0], v2[0]))
     yvals = np.concatenate((v1[1], v2[1]))
     rat = (yvals.max() - yvals.min()) / (xvals.max() - xvals.min())
@@ -171,7 +170,7 @@ def max_dif(v1, v2, v0, s0):
         a = [(a * dd, b * dd) for a in range(-r, r + 1) for b in range(-r, r + 1)]
         vals = dict()
         for i in a:
-            vals[i] = evalu(v1, v2, mo(v, s, i[0]), ro(s, i[1] / dm * np.pi, rat))[0]
+            vals[i] = evalu(v1, v2, mo(v, s, i[0]), ro(s, i[1] / dm * np.pi, rat), e=e)[0]
         mval = [k for k in vals if max(vals.values()) == vals[k]]
         if (0, 0) not in mval:
             ind = mval[0]
@@ -182,10 +181,10 @@ def max_dif(v1, v2, v0, s0):
             dm = dist.min()
         else:
             dd *= r / 5
-    return v, s, evalu(v1, v2, v, s)
+    return v, s, evalu(v1, v2, v, s, e = e)
 
 
-def max_dif_2(v1, v2):
+def max_dif_2(v1, v2, e = None):
     xvals = np.concatenate((v1[0], v2[0]))
     yvals = np.concatenate((v1[1], v2[1]))
     rat = (yvals.max() - yvals.min()) / (xvals.max() - xvals.min())
@@ -199,26 +198,36 @@ def max_dif_2(v1, v2):
         for i in sort[: int(it[0] * le)]:
             v = vals[i]
             for s in slopes:
-                e = evalu(v1, v2, v, s)
-                if e[0] > ind[i][0]:
-                    ind[i] = [e[0], s]
+                er = evalu(v1, v2, v, s, e = e)
+                if er[0] > ind[i][0]:
+                    ind[i] = [er[0], s]
     m = max(ind, key=lambda x: ind[x][0])
     v = vals[m]
     s = ind[m][1]
-    return v, s, evalu(v1, v2, v, s)
+    return v, s, evalu(v1, v2, v, s, e = e)
 
 
-def evalu(v1, v2, v, s):
+def evalu(v1, v2, v, s, e = None):
     v1x = np.array(v1[0])
     v1y = np.array(v1[1])
     v2x = np.array(v2[0])
     v2y = np.array(v2[1])
     dis1 = ldis(v1x, v1y, v, s)
-    dis1 = (dis1 > 0).sum() / len(dis1)
+    n1 = (dis1 > 0).sum()
+    dis1 = n1 / len(dis1)
     dis2 = ldis(v2x, v2y, v, s)
-    dis2 = (dis2 <= 0).sum() / len(dis2)
-    return np.abs(dis1 + dis2 - 1), (dis1, dis2)
-
+    n2 = (dis2 <= 0).sum()
+    dis2 = n2 / len(dis2)
+    n = (n1 + (len(v2x)-n2))
+    ntot = len(v1x)+len(v2x)
+    tfra = len(v1x)/(len(v1x)+len(v2x))
+    tfra = min(tfra, 1-tfra)
+    lfra = n/ntot
+    lfra = min(lfra, 1-lfra)
+    if e is None or tfra - e < lfra < tfra + e:
+        return np.abs(dis1 + dis2 - 1), (dis1, dis2), (lfra, tfra)
+    else:
+        return 0, (dis1, dis2), (lfra, tfra)
 
 def ldis(vx, vy, v, s):
     sign = -s / np.abs(s)

@@ -19,6 +19,7 @@ Attributes:
 """
 
 import warnings
+import os
 
 import astropy
 import matplotlib.pyplot as plt
@@ -58,8 +59,9 @@ calculated_fwhms = {
     "F480M": (6.054312102519142, 6.199064508582882),
 }
 
+g_scale = 3
 
-def get_psf(name):
+def get_psf(name, scale = g_scale):
     """Tries to get psf of the frame.
 
     Based on the filter's name tries to obtain the point spread function
@@ -73,10 +75,20 @@ def get_psf(name):
             were found.
     """
     try:
-        path = f"../psf/webbpsf_NIRCam_{name}_pixsc25mas.fits"
-        psf = astropy.io.fits.open(path)[0].data
-        psf /= np.nansum(psf)
-        return psf
+        #path = f"../psf/webbpsf_NIRCam_{name}_pixsc25mas.fits"
+        dpath = "../psf/"
+        files = [os.path.join(dpath, f) for f in os.listdir(dpath) if os.path.isfile(os.path.join(dpath, f)) and f[-5:] == ".fits"]
+        film = [f for f in files if (name in f)]
+        if film:
+            psf = astropy.io.fits.open(film[0])[0].data
+            if len(psf.shape) == 3:
+                psf = np.sum(psf, axis = 0)
+            psf /= np.nansum(psf)
+            if scale != 1:
+                psf = scale_psf(psf, 1/scale)
+            return psf
+        else:
+            return None
     except:
         warnings.warn(f"Haven't found psf for filter {name}.")
         return None
@@ -243,4 +255,5 @@ def scale_psf(psf, scale_ratio):
         npsf[xstart : xstart + nshape[0], ystart : ystart + nshape[1]] = psf_scaled
     else:
         npsf = psf
+    npsf /= np.nansum(npsf)
     return npsf

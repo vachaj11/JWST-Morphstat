@@ -13,6 +13,7 @@ import warnings
 
 import matplotlib.image as mpi
 import matplotlib.pyplot as plt
+import matplotlib.collections as mpc
 import numpy as np
 import scipy.stats as stats
 import seaborn as sns
@@ -103,6 +104,34 @@ def plot_value(galaxies, valuex, valuey, filt="avg", axis=None):
     ax.set_ylabel(valuey)
     return zip(valsx, valsy, valsg)
 
+def plot_value_2s(galaxies1, galaxies2, valuex, valuey, axis=None):
+    """!!!
+    """
+    if axis is not None:
+        ax = axis
+        fig = plt.gcf()
+    else:
+        fig, ax = plt.subplots()
+    gal1 = resu.get_subset(galaxies1, galaxies2)
+    gal2 = resu.get_subset(galaxies2, gal1)
+    valsy = []
+    valsx = []
+    valsg = []
+    for g in gal1:
+        valx = resu.get_filter_or_avg(g, valuex, "avg")
+        gy = next((g2 for g2 in gal2 if g2["name"] == g["name"]), None)
+        valy = resu.get_filter_or_avg(gy, valuey, "avg")
+        if valx is not None and valy is not None:
+            valsy.append(valy)
+            valsx.append(valx)
+            valsg.append(g["name"])
+    valsy, valsx, valsg = rem_bad_outliers([valsy, valsx, valsg])
+    ax.plot(
+        valsx, valsy, linestyle="", marker=".", alpha=0.3, label=f"({len(valsx)})"
+    )
+    ax.set_xlabel(valuex)
+    ax.set_ylabel(valuey)
+    return zip(valsx, valsy, valsg)
 
 def plot_correlation(
     galaxies, valuex, valuey, filt="avg", return_full=False, axis=None
@@ -361,6 +390,20 @@ def plot_value_filters(galaxies, valuex, valuey, filt="avg", axis=None):
         "button_press_event", lambda x: resu.print_closest([x.xdata, x.ydata], vals)
     )
 
+def plot_values_2s(galaxies1, galaxies2, valuex, valuey, axis=None):
+    """!!!
+    """
+    if axis is not None:
+        ax = axis
+        fig = plt.gcf()
+    else:
+        fig, ax = plt.subplots()
+    vals = []
+    vals.extend(plot_value_2s(galaxies1, galaxies2, valuex, valuey, axis=ax))
+    fig.canvas.mpl_connect(
+        "button_press_event", lambda x: resu.print_closest([x.xdata, x.ydata], vals)
+    )
+
 
 def plot_correlation_filters(galaxies, valuex, valuey, filt="avg", axis=None):
     """Plots requested values agains each other for a provided set of galaxies
@@ -597,7 +640,7 @@ def plot_smooth2d_comp(gals_list, valuex, valuey, filt="avg", axis=None, alpha=0
         else:
             lab = f"({len(valsx)})"
         sns.kdeplot(
-            x=valsx, y=valsy, fill=True, cmap="OrRd", ax=ax, bw_adjust=0.3, alpha=alpha
+            x=valsx, y=valsy, fill=True, cmap="Oranges", ax=ax, bw_adjust=0.3, alpha=alpha
         )
     else:
         ax.set_title(f"Approximate distribution comparison of {valuex}")
@@ -707,14 +750,16 @@ def plot_points(
         x,
         means,
         marker="D",
-        c="darkred",
-        markersize=4,
-        linestyle="--",
+        c="#e70000a0",
+        markeredgecolor = "#8b0000b1",
+        markersize=5,
+        linestyle="",
         label="mean",
         linewidth=1.5,
+        alpha = None
     )
     ax.plot(
-        x, medians, marker="_", c="darkred", markersize=12, linestyle="", label="median"
+        x, medians, marker="", c="#e70000ff", markersize=12, linestyle=":", label="median", linewidth=2.5
     )
     # ax.plot(x, means, c="darkred", alpha=0.85, linewidth=1.3, linestyle="dotted")
     ax.set_ylabel(value)
@@ -828,18 +873,20 @@ def plot_violin(gals_list, value, filt="avg", names=[], xranges=[], axis=None):
             y=valss[i] * 2,
             hue=[0] * len(valss[i]) + [1] * len(valss[i]),
             split=True,
-            palette={0: "orange", 1: "orange"},
-            alpha=0.3,
+            palette={0: "#ffa333", 1: "#ffa333"},
             ax=ax,
+            alpha = 0.7,
             inner=None,
-            bw_adjust=0.5,
-            linecolor="red",
-            linewidth=1.5,
+            bw_adjust=0.6,
+            linecolor="#854900d5",
+            linewidth=1,
         )
         if not i % 2:
             ax.collections[-2].set_alpha(0)
+            ax.collections[-1].set(facecolor="#ffa333", alpha = 0.8)
         else:
             ax.collections[-1].set_alpha(0)
+            ax.collections[-2].set(facecolor="#ffa333", alpha = 0.8)
     ax.set_ylabel(value)
     ax.legend()
 
@@ -920,7 +967,8 @@ def points_multi_bins(
             plot_smooth2d_comp((galaxies,), "H_RE", value, axis=axs[n[3]], alpha=balpha)
         axs[n[3]].set_xlabel("$r_\\mathrm{eff}\\, (\\mathrm{arcsec})$")
     for ax in axs:
-        ax.label_outer()
+        if len(axs) > 1:
+            ax.label_outer()
         ax.set_title("")
         if not no_legend:
             ax.legend(loc=1)
@@ -968,7 +1016,8 @@ def points_multi_clas(
             (separ[k][1], separ[k][0]), value, names=["non-" + k, k], axis=axs[c]
         )
         axs[c].set_label(f"${k}$")
-        axs[c].label_outer()
+        if len(axs) > 1:
+            axs[c].label_outer()
         if not no_legend:
             axs[c].legend(loc=1)
         elif axs[c].get_legend() is not None:
@@ -1077,6 +1126,8 @@ def plot_grided(galaxies, values, len_funct, funct, title="", *args, **kwargs):
     fig = plt.figure(figsize=(len(values) * 3.5, len_funct * 3.5))
     gs = fig.add_gridspec(len(values), len_funct, wspace=0, hspace=0)
     axs = gs.subplots(sharey="row", sharex="col")
+    if len(axs.shape) == 1:
+        axs = np.array([[ax] for ax in axs])
     for i in range(len(values)):
         funct(galaxies, values[i], axis=axs[i], no_legend=True, *args, **kwargs)
     for ax in axs.flatten():

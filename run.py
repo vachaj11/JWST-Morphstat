@@ -163,7 +163,9 @@ def adhoc_path(path):
 
     Should be moved to some config file later.
     """
-    p = "../MP_cutouts/out/galfit_results/" + path[:-4]
+    p = "../MP_cutouts/out/galfit_results/" + path
+    if p[-4:] == ".pdf":
+        p = p[:-4]
     p = p.replace("big/", "big/results_")
     p = p.replace("small/", "small/results_")
     return p
@@ -196,6 +198,7 @@ def get_fitss(galaxy):
             filters.append(galaxy["filters"][l])
         except:
             warnings.warn(f"Couldn't locate {path}.")
+            print(path)
     return filters, fitss
 
 

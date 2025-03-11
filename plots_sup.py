@@ -10,13 +10,16 @@ from ren_values import *
 
 """To generate the plots, first update the paths bellow to correspond to the location of the output/input dictionaries. 
 """
+remove = ["GS4_18890", "COS4_17600", "GS4_19797", "COS4_05758", "U4_28125", "G4_06569", "GS4_30028", "GS4_29773"]
+rem_g = [{"name":g} for g in remove]
 
-raw = run.fetch_json("dict_out/out_full_matched_5_m.json")["galaxies"]
+raw_o = run.fetch_json("dict_out/out_full_matched_5_m.json")["galaxies"]
+raw = resu.get_complement(raw_o, rem_g)
 
 fil = resu.galaxy_pruning(raw)
 
 
-def ginim20_redshift():
+def ginim20_redshift(save = None):
     fig, axs = plt.subplots()
     z = resu.get_separate_in_value(fil, "z bin")
     rang = ((-2.3, -0.8), (0.38, 0.64))
@@ -80,9 +83,10 @@ def ginim20_redshift():
 
     fig.set_size_inches(5.5, 5)
     fig.set_layout_engine(layout="tight")
+    if save is not None:
+        fig.savefig(save)
 
-
-def ca_redshift():
+def ca_redshift(save = None):
     fig, axs = plt.subplots()
     z = resu.get_separate_in_value(fil, "z bin")
     rang = ((2.5, 3.5), (0, 0.3))
@@ -142,9 +146,10 @@ def ca_redshift():
 
     fig.set_size_inches(5.5, 5)
     fig.set_layout_engine(layout="tight")
+    if save is not None:
+        fig.savefig(save)
 
-
-def mid_bins():
+def mid_bins(save = None):
     vis.plot_grided(
         fil,
         ["M", "I", "D"],
@@ -182,9 +187,10 @@ def mid_bins():
     L.texts[1].set_text("median")
     fig.set_size_inches(9.5, 7.4)
     fig.set_layout_engine(layout="tight")
+    if save is not None:
+        fig.savefig(save)
 
-
-def cas_bins():
+def cas_bins(save = None):
     vis.plot_grided(
         fil,
         ["C", "A", "S"],
@@ -222,9 +228,10 @@ def cas_bins():
     L.texts[1].set_text("median")
     fig.set_size_inches(9.5, 7.4)
     fig.set_layout_engine(layout="tight")
+    if save is not None:
+        fig.savefig(save)
 
-
-def ser_bins():
+def ser_bins(save = None):
     vis.plot_grided(
         fil,
         ["sersic_n", "sersic_rhalf", "sersic_amplitude"],
@@ -262,9 +269,10 @@ def ser_bins():
     L.texts[1].set_text("median")
     fig.set_size_inches(9.5, 7.4)
     fig.set_layout_engine(layout="tight")
+    if save is not None:
+        fig.savefig(save)
 
-
-def gm20_bins():
+def gm20_bins(save = None):
     vis.plot_grided(
         fil,
         ["Gini", "M20", "S(G, M20)", "F(G, M20)"],
@@ -304,9 +312,10 @@ def gm20_bins():
     L.texts[1].set_text("median")
     fig.set_size_inches(9.5, 9.5)
     fig.set_layout_engine(layout="tight")
+    if save is not None:
+        fig.savefig(save)
 
-
-def mid_evol():
+def mid_evol(save = None):
     vis.plot_grided(
         fil,
         ["M", "I", "D"],
@@ -353,9 +362,10 @@ def mid_evol():
     L.texts[1].set_text("median")
     fig.set_size_inches(9.5, 7.4)
     fig.set_layout_engine(layout="tight")
+    if save is not None:
+        fig.savefig(save)
 
-
-def cas_evol():
+def cas_evol(save = None):
     vis.plot_grided(
         fil,
         ["C", "A", "S"],
@@ -402,9 +412,10 @@ def cas_evol():
     L.texts[1].set_text("median")
     fig.set_size_inches(9.5, 7.4)
     fig.set_layout_engine(layout="tight")
+    if save is not None:
+        fig.savefig(save)
 
-
-def ser_evol():
+def ser_evol(save = None):
     vis.plot_grided(
         fil,
         ["sersic_n", "sersic_rhalf", "sersic_amplitude"],
@@ -451,9 +462,10 @@ def ser_evol():
     L.texts[1].set_text("median")
     fig.set_size_inches(9.5, 7.4)
     fig.set_layout_engine(layout="tight")
+    if save is not None:
+        fig.savefig(save)
 
-
-def gm20_evol():
+def gm20_evol(save = None):
     vis.plot_grided(
         fil,
         ["Gini", "M20", "S(G, M20)", "F(G, M20)"],
@@ -501,18 +513,19 @@ def gm20_evol():
     L.texts[1].set_text("median")
     fig.set_size_inches(9.5, 9.5)
     fig.set_layout_engine(layout="tight")
-
+    if save is not None:
+        fig.savefig(save)
 
 if __name__ == "__main__":
     """Comment out lines corresponding to plots you want to create."""
-    # ginim20_redshift()
-    # ca_redshift()
-    # mid_bins()
-    # cas_bins()
-    # ser_bins()
-    # gm20_bins()
-    # mid_evol()
-    # cas_evol()
-    # ser_evol()
-    # gm20_evol()
+    #ginim20_redshift(save = "../../out/supl/josef_z_gm20.png")
+    #ca_redshift(save = "../../out/supl/josef_z_cas.png")
+    #mid_bins(save = "../../out/supl/josef_mid_bins.png")
+    #cas_bins(save = "../../out/supl/josef_cas_bins.png")
+    #ser_bins(save = "../../out/supl/josef_ser_bins.png")
+    #gm20_bins(save = "../../out/supl/josef_gm20_bins.png")
+    #mid_evol(save = "../../out/supl/josef_mid_evol.png")
+    #cas_evol(save = "../../out/supl/josef_cas_evol.png")
+    #ser_evol(save = "../../out/supl/josef_ser_evol.png")
+    #gm20_evol(save = "../../out/supl/josef_gm20_evol.png")
     plt.show()

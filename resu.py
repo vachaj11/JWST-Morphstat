@@ -711,3 +711,17 @@ def manual_reev_c(
     if out_path is not None:
         run.save_as_json({"galaxies": gals}, out_path)
     return gals
+
+def find_duplicates(galaxies, margin = 0.002, mdif = 0.05):
+    l = []
+    for g in galaxies:
+        ll = set()
+        for gc in galaxies:
+            distra = gc["info"]["RA"]-g["info"]["RA"]
+            distde = gc["info"]["DEC"]-g["info"]["DEC"]
+            dist = np.sqrt(distra**2+distde**2)
+            mass = np.abs(gc["info"]["LMSTAR"]-g["info"]["LMSTAR"])/g["info"]["LMSTAR"]
+            if dist < margin and mass < mdif:
+                ll.add(gc["name"])
+        if ll not in l: l.append(ll)
+    return [g for g in l if len(g)>1]

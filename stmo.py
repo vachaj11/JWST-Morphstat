@@ -7,6 +7,7 @@ provided and subsequently can use them for calculations, visualisations, etc.
 """
 
 import warnings
+import time
 
 import astropy
 import matplotlib.pyplot as plt
@@ -299,7 +300,7 @@ class frame:
 
     def calc_stmo(self):
         """Runs statmorph calculation and stores the result."""
-        self.stmo = self.get_stmo(self.data_sub, self.target, self.mask, self.psf)
+        self.stmo = self.get_stmo(self.data_sub, self.target, self.mask,psf= self.psf)
 
     def adjust_resolution(self, psf, pixel_size):
         """Adjust the resolution of the frame image and its psf based on
@@ -325,13 +326,16 @@ class frame:
         """
         if self.psf is not None:
             if type(psf) == list:
-                fin_fwhm = psf[2] / pixel_size
-                kernel = psfm.get_conv_kernel(self.psf, psf[0], pixel_size / psf[1])
+                fin_fwhm = psf[2]/ pixel_size
+                kernel = psfm.get_conv_kernel(self.psf, psf[0], pixel_size / psf[1]/scale_f)
             else:
                 warnings.warn(
                     f"Generating kernel for psf transformation failed, using Gaussian approximation instead."
                 )
-                fin_fwhm = psf / pixel_size
+                if type(psf) == str and psf[:3] == "dir":
+                    fin_fwhm = float(psf[3:])
+                else:
+                    fin_fwhm = psf / pixel_size
                 kernel = None
             if kernel is None:
                 fwhms = psfm.get_psf_fwhm(self.name, self.psf)
