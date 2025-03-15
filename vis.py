@@ -694,7 +694,7 @@ def plot_smooth2d_subt(gals, valuex, valuey, filt="avg", axis=None, rang=None):
 
 
 def plot_points(
-    gals_list, value, filt="avg", names=[], xranges=[], axis=None, xalpha=1, yalpha=1
+    gals_list, value, filt="avg", names=[], xranges=[], axis=None, xalpha=1, yalpha=1, percentiles = (33,67)
 ):
     """Plot a very simple plot with one point per set of galaxies and
     appropriate error bars. !!!
@@ -724,8 +724,8 @@ def plot_points(
         means.append(np.mean(vals))
         medians.append(np.median(vals))
         stds.append(np.std(vals, mean=medians[-1]))
-        e33.append(medians[-1] - np.percentile(vals, 33))
-        e68.append(np.percentile(vals, 68) - medians[-1])
+        e33.append(medians[-1] - np.percentile(vals, percentiles[0]))
+        e68.append(np.percentile(vals, percentiles[1]) - medians[-1])
     if len(xranges) == len(gals_list):
         x = [(i[0] + i[1]) / 2 for i in xranges]
         xe = [abs(i[1] - i[0]) / 2 for i in xranges]
@@ -883,7 +883,7 @@ def plot_violin(gals_list, value, filt="avg", names=[], xranges=[], axis=None):
         )
         if not i % 2:
             ax.collections[-2].set_alpha(0)
-            ax.collections[-1].set(facecolor="#ffa333", alpha = 0.8)
+            ax.collections[-1].set(facecolor="#4b92c3", alpha = 0.8, edgecolor="#1d3e55")
         else:
             ax.collections[-1].set_alpha(0)
             ax.collections[-2].set(facecolor="#ffa333", alpha = 0.8)
@@ -980,7 +980,7 @@ def points_multi_bins(
 
 
 def points_multi_clas(
-    galaxies, value, filt="avg", axis=None, no_legend=False, new_names=None
+    galaxies, value, filt="avg", axis=None, no_legend=False, new_names=None, percentiles = (33,67)
 ):
     """!!!"""
     if new_names is None:
@@ -1010,7 +1010,7 @@ def points_multi_clas(
     c = 0
     for k in separ:
         plot_points(
-            (separ[k][1], separ[k][0]), value, names=["non-" + k, k], axis=axs[c]
+            (separ[k][1], separ[k][0]), value, names=["non-" + k, k], axis=axs[c], percentiles = percentiles
         )
         plot_violin(
             (separ[k][1], separ[k][0]), value, names=["non-" + k, k], axis=axs[c]

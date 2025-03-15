@@ -59,7 +59,7 @@ calculated_fwhms = {
     "F480M": (6.054312102519142, 6.199064508582882),
 }
 
-g_scale = 3
+g_scale = 1
 
 def get_psf(name, scale = g_scale):
     """Tries to get psf of the frame.
