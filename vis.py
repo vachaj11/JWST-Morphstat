@@ -304,7 +304,15 @@ def plot_hist_comp(
             lab = f"filter {filt} ({len(vals)})"
         else:
             lab = f"({len(vals)})"
-        ax.hist(vals, label=lab, density=pdf, bins=bins, histtype="step")
+        #ax.hist(vals, label=lab, density=pdf, bins=bins, histtype="step")
+        if pdf == True:
+            ncount, nbins = np.histogram(vals, density = True, bins = bins)
+        elif pdf == "hist":
+            ncount, nbins = np.histogram(vals, density = False, bins = bins)
+            ncount = ncount/len(vals)
+        else:
+            ncount, nbins = np.histogram(vals, density = False, bins = bins)
+        ax.stairs(ncount, nbins, label = lab)
 
     if not pdf:
         ax.set_title(f"Histogram comparison of {value}")
@@ -324,30 +332,36 @@ def plot_smooth_comp(gals_list, value, filt="avg", pdf=False, nsig=25, axis=None
         ax = axis
     else:
         fig, ax = plt.subplots()
+    valf = dict()
+    for galaxies in gals_list:
+        for g in galaxies:
+            val = resu.get_filter_or_avg(g, value, filt)
+            if val is not None:
+                valf[g["name"]] = val
+    uval, unam = rem_bad_outliers([list(valf.values()),list(valf.keys())])
+    valf = {unam[i]:uval[i] for i in range(len(uval))}
+    minx = min(uval)
+    maxx = max(uval)
+    sig = (maxx - minx) / nsig
+    gaus = lambda x: 1 / (sig * np.sqrt(2 * np.pi)) * np.exp(-((x / sig) ** 2) / 2)
+    x = np.linspace(minx, maxx, num=200)
     for galaxies in gals_list:
         vals = []
         valsg = []
         for g in galaxies:
-            val = resu.get_filter_or_avg(g, value, filt)
-            if val is not None:
-                vals.append(val)
-                valsg.append(g["name"])
-        vals = rem_bad_outliers([vals, valsg])[0]
+            if g["name"] in valf.keys():
+                vals.append(valf[g["name"]])
         if filt:
             lab = f"filter {filt} ({len(vals)})"
         else:
             lab = f"({len(vals)})"
-        minx = min(vals)
-        maxx = max(vals)
-        sig = (maxx - minx) / nsig
-        gaus = lambda x: 1 / (sig * np.sqrt(2 * np.pi)) * np.exp(-((x / sig) ** 2) / 2)
-        x = np.linspace(minx, maxx, num=200)
         y = []
-        if pdf:
+        if pdf == True:
             norm = len(vals)
+        elif pdf == "hist":
+            norm = len(vals)*nsig/ (maxx - minx)
         else:
             norm = nsig / (maxx - minx)
-        # norm = int(pdf) * (len(vals) - 1) + 1
         for i in x:
             y.append(sum([gaus(i - c) for c in vals]) / norm)
         ax.plot(x, y, label=lab)

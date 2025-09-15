@@ -56,9 +56,10 @@ def get_galaxy_entry(galaxies_full, gal_name, fil_names=None):
                 return None
     return None
 
-def get_galaxies_filter(galaxies_full, filt):
+def get_galaxies_filter(galaxies, filt):
     """Gets galaxies with a specified filter."""
     gals = []
+    galaxies_full = copy.deepcopy(galaxies)
     for g in galaxies_full:
         gf = get_galaxy_entry(galaxies_full, g["name"], fil_names=[filt])
         if gf is not None:

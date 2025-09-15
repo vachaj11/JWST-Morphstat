@@ -117,9 +117,9 @@ def best_parameters_l(gal1, gal2, parameters, e = None):
             vals[(parameters[i1], parameters[i2])] = [p, s, d]
 
             print(
-                f"Finished {parameters[i1]} X {parameters[i2]} with {d} in {time.time()-starti} s."
+                f"Finished {parameters[i1]} X {parameters[i2]} with {d:.3f} in {time.time()-starti:.2f} s."
             )
-    print(f"Finished running in {time.time()-start} s.")
+    print(f"Finished running in {time.time()-start:.2f} s.")
     return vals
 
 
@@ -137,7 +137,7 @@ def best_parameters_t(gal1, gal2, pars, e = None):
             ts[(pars[i1], pars[i2])].start()
     for k in ts:
         ts[k].join()
-    print(f"Finished running in {time.time()-start} s.")
+    print(f"Finished running in {time.time()-start:.2f} s.")
     return vals
 
 
@@ -156,7 +156,7 @@ def best_parameters(gal1, gal2, pars, e = None):
             ts[(pars[i1], pars[i2])].start()
     for k in ts:
         ts[k].join()
-    print(f"Finished running in {time.time()-start} s.")
+    print(f"Finished running in {time.time()-start:.2f} s.")
     return vals
 
 
@@ -164,7 +164,7 @@ def threadp(vals, gal1, gal2, p1, p2, e = None):
     start = time.time()
     p, s, (d, _, _) = max_sep(gal1, gal2, p1, p2, e = e)
     vals[(p1, p2)] = [p, s, d]
-    print(f"Finished {p1} X {p2} with {d} in {time.time()-start} s.")
+    print(f"Finished {p1} X {p2} with {d:.3f} in {time.time()-start:.2f} s.")
 
 
 def max_sep(gal1, gal2, valx, valy, param=None, e = None, rfull = None):

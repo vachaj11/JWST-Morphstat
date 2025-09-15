@@ -275,13 +275,13 @@ def get_galaxy_data(galaxy):
     gald["info"]["_flag_target"] = galaxy.target_flag
     frames = []
     for frame in galaxy.frames:
-        data = get_frame_data(frame)
+        data = get_frame_data(frame, galaxy)
         frames.append(data)
     gald["frames"] = frames
     return gald
 
 
-def get_frame_data(frame):
+def get_frame_data(frame, galaxy):
     """Extracts data from an internal representation of a frame and formats
     them into the output dictionary.
 
@@ -293,6 +293,8 @@ def get_frame_data(frame):
     Args:
         frame (stmo.frame): Internal representation of a frame to be
             translated into an output dictionary.
+        galaxy (stmo.galaxy): Internal representation of a galaxy to be used 
+            in the translation. 
 
     Returns:
         dict: A dictionary holding information relating to the frame, its
@@ -358,5 +360,6 @@ def get_frame_data(frame):
         "_bg_std": float(frame.bg_std),
         "_flag_seg": int(frame.flag_seg),
         "_flag_corr": int(frame.flag_corr),
+        "_s_rhalf_kpc": float(st.sersic_rhalf*galaxy.pixel_size)
     }
     return data
