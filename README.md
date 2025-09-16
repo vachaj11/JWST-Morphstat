@@ -1,4 +1,4 @@
-# *JWST-Morphstat* - Statmorph calculations for the jwst morphology project
+# *JWST-Morphstat* - Statmorph calculations for the JWST Morphology Project
 
 Set of scripts for running [`statmorph`](https://statmorph.readthedocs.io/en/latest/) calculation and visualising results created as part of the JWST morphology project at the Max Planck Institute for Extraterrestrial Physics. Mostly written over summer 2024 and during subsequent months in preparation for publication as part of [*Espejo Salcedo et al. 2025*](https://ui.adsabs.harvard.edu/abs/2025A%26A...700A..42E/abstract).
 
