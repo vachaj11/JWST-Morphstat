@@ -2,7 +2,7 @@
 
 Set of scripts for running [`statmorph`](https://statmorph.readthedocs.io/en/latest/) calculation and visualising results created as part of the JWST morphology project at the Max Planck Institute for Extraterrestrial Physics. Mostly written over summer 2024 and during subsequent months in preparation for publication as part of [*Espejo Salcedo et al. 2025*](https://ui.adsabs.harvard.edu/abs/2025A%26A...700A..42E/abstract).
 
-Most of the core code is documented via docstrings attached to module-level functions, classes and attributes - although newer code handling specifics of results visualisations can in part lack this. Despite this the code is currently for the most part *not* in a state where it will likely work when run without further environment-specific adjustions, for start because it makes some arbitrary assumptions about inputted data.
+Most of the core code is documented via docstrings attached to module-level functions, classes and attributes - although newer code handling specifics of results visualisations can in part lack this. Despite this the code is currently for the most part in a state where it will likely *not* work when run without further environment-specific adjustions, for start because it makes some arbitrary assumptions about inputted data.
 
 ## Instalation
 
@@ -15,14 +15,15 @@ After which the code can be cloned to appropriate directory, and run as describe
 ## Usage
 
 The scripts are created to be used in the interactive mode of the python interpreter by calling specific methods included in them.
-To this purpose documentation is also included in docstring of each method/object from which it can be accessed the easiest with
+To this purpose documentation is also included in docstring of most methods/objects from which it can be accessed the easiest with
 `help(object)`.
 
-The code is divided into 6 modules:
+The code is divided into 11 modules:
 - Background logic
-  - `psfm.py` - used for psf physical size-resolution matching
-  - `seg.py` - used for creation of segmentation map of target and masks
-  - `stmo.py` - holds classes internally representing galaxy and its frames, and runs statmorph calculation as well as calculation of its prerequisites
+  - `config.py` - Holds basic configuration and default parameters values of the scripts. Has to be modified according to specifics of the task the code is being used for.
+  - `psfm.py` - Used for psf physical size-resolution matching
+  - `seg.py` - Used for creation of segmentation map of target and masks
+  - `stmo.py` - Holds classes internally representing galaxy and its frames, and runs statmorph calculation as well as calculation of its prerequisites
 - `run.py` - Main module for calling the statmorph calculation. The main method here is `run.galaxies_data(...)`
 - `resu.py` - Module holding methods for preparing the data for statmorph calculation as well as filtering and manipulating the resulting data
 - `vis.py` - Set of methods for visualisation of the results utilising `matplotlib`
@@ -45,7 +46,9 @@ For more information on each module access its docstirng with:
 
 ## Standard run
 
-Following would be a standard usage for statmorph calculation, filtering of the results, etc. :
+Shown bellow would be a standard usage for statmorph calculation, filtering of the results, etc.
+
+The structure of the input and output `.json` files can be found in [dictionary_structure.md](dictionary_structure.md).
 
     $ python3
 
