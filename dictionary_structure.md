@@ -1,3 +1,85 @@
+Input dictionary example structure
+----------------------------------
+
+The scripts run based on two inputs: 1. general configuration specified in `config.py` and 2. information about the sources and their imaging provided in a form of a `.json` file.
+
+Example of the latter can be seen bellow for a single source `U4_17483` with imaging in filters `F090W` and `F444W`. (Comments on the structure are provided as entries `"##"` etc.)
+    
+    {
+        "galaxies": [
+            {
+    	        "######": "Unique name of the source",
+                "name": "U4_17483",
+                
+                "######": "Names of filters in which imaging of the source is available.",
+                "filters": [
+                    "F090W",
+                    "F444W"
+                ],
+                
+                "######": "Paths to fits files corresponding to imaging in available filters.",
+                "files": [
+                    "high_z_high_m_low_sfr_small/U4_17483_JWST_NIRCAM_F090W_cutout_6.0_arcsec.GAB.fits",
+                    "high_z_high_m_low_sfr_small/U4_17483_JWST_NIRCAM_F444W_cutout_6.0_arcsec.GAB.fits"
+                ],
+                
+                "######": "Various general information about the source.",
+                "info": {
+                    "####": "Best redshift estimate",
+                    "ZBEST": 2.327,
+                    
+                    "####": "(Optional) Coordinates of the source, used only for identification of duplicates.",
+                    "RA": 34.23394999999999,
+                    "DEC": -5.217676944444444,
+                    
+                	"####": "(Optional) Various parameters used only for a few very specific plots",
+                  	"##": "Sample binning in redshift/mass/sfr/size",
+                    "z bin": "high_z",
+                    "M bin": "high_m",
+                    "SFR bin": "low_sfr",
+                    "size bin": "small",
+                    
+                    "##": "Stellar mass",
+                    "LMSTAR": 10.93000030517578,
+                    
+                    "##": "Star formation rate",
+                    "DMS": -0.2079,
+                    
+                    "##": "Parameters of Sersic profile fit",
+                    "H_RE": 0.2413,
+                    "H_NSERSIC": 2.7699999809265137,
+                    "H_Q": 0.5498,
+                    "H_PA": 21.12,
+                    "VDW12_H_RE": -99.0,
+                    "VDW12_H_N": -99.0,
+                    "VDW12_H_Q": -99.0,
+                    "VDW12_H_PA": -999.0
+                }
+            }
+        ]
+    }
+
+And bellow, example of source `U4_36568` with imaging in `F277W` shows the most minimal functional input that can be provided.  
+
+    {
+        "galaxies": [
+            {
+                "name": "U4_36568",
+                "filters": [
+                    "F277W"
+                ],
+                "files": [
+                    "high_z_high_m_high_sfr_small/U4_36568_JWST_NIRCAM_F277W_cutout_6.0_arcsec.GAB.fits.pdf"
+                ],
+                "info": {
+                    "ZBEST": 2.177
+                }
+            }
+        ]
+    }
+
+Additional entries can be arbitrarily appended to any part of the `.json` file and should not affect any operational aspect of the scripts.
+
 Output dictionary structure description
 ---------------------------------------
 
