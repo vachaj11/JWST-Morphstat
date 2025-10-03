@@ -11,9 +11,9 @@ closest galaxy.
 
 import warnings
 
+import matplotlib.collections as mpc
 import matplotlib.image as mpi
 import matplotlib.pyplot as plt
-import matplotlib.collections as mpc
 import numpy as np
 import scipy.stats as stats
 import seaborn as sns
@@ -104,9 +104,9 @@ def plot_value(galaxies, valuex, valuey, filt="avg", axis=None):
     ax.set_ylabel(valuey)
     return zip(valsx, valsy, valsg)
 
+
 def plot_value_2s(galaxies1, galaxies2, valuex, valuey, axis=None):
-    """!!!
-    """
+    """!!!"""
     if axis is not None:
         ax = axis
         fig = plt.gcf()
@@ -126,12 +126,11 @@ def plot_value_2s(galaxies1, galaxies2, valuex, valuey, axis=None):
             valsx.append(valx)
             valsg.append(g["name"])
     valsy, valsx, valsg = rem_bad_outliers([valsy, valsx, valsg])
-    ax.plot(
-        valsx, valsy, linestyle="", marker=".", alpha=0.3, label=f"({len(valsx)})"
-    )
+    ax.plot(valsx, valsy, linestyle="", marker=".", alpha=0.3, label=f"({len(valsx)})")
     ax.set_xlabel(valuex)
     ax.set_ylabel(valuey)
     return zip(valsx, valsy, valsg)
+
 
 def plot_correlation(
     galaxies, valuex, valuey, filt="avg", return_full=False, axis=None
@@ -304,15 +303,15 @@ def plot_hist_comp(
             lab = f"filter {filt} ({len(vals)})"
         else:
             lab = f"({len(vals)})"
-        #ax.hist(vals, label=lab, density=pdf, bins=bins, histtype="step")
+        # ax.hist(vals, label=lab, density=pdf, bins=bins, histtype="step")
         if pdf == True:
-            ncount, nbins = np.histogram(vals, density = True, bins = bins)
+            ncount, nbins = np.histogram(vals, density=True, bins=bins)
         elif pdf == "hist":
-            ncount, nbins = np.histogram(vals, density = False, bins = bins)
-            ncount = ncount/len(vals)
+            ncount, nbins = np.histogram(vals, density=False, bins=bins)
+            ncount = ncount / len(vals)
         else:
-            ncount, nbins = np.histogram(vals, density = False, bins = bins)
-        ax.stairs(ncount, nbins, label = lab)
+            ncount, nbins = np.histogram(vals, density=False, bins=bins)
+        ax.stairs(ncount, nbins, label=lab)
 
     if not pdf:
         ax.set_title(f"Histogram comparison of {value}")
@@ -338,8 +337,8 @@ def plot_smooth_comp(gals_list, value, filt="avg", pdf=False, nsig=25, axis=None
             val = resu.get_filter_or_avg(g, value, filt)
             if val is not None:
                 valf[g["name"]] = val
-    uval, unam = rem_bad_outliers([list(valf.values()),list(valf.keys())])
-    valf = {unam[i]:uval[i] for i in range(len(uval))}
+    uval, unam = rem_bad_outliers([list(valf.values()), list(valf.keys())])
+    valf = {unam[i]: uval[i] for i in range(len(uval))}
     minx = min(uval)
     maxx = max(uval)
     sig = (maxx - minx) / nsig
@@ -359,7 +358,7 @@ def plot_smooth_comp(gals_list, value, filt="avg", pdf=False, nsig=25, axis=None
         if pdf == True:
             norm = len(vals)
         elif pdf == "hist":
-            norm = len(vals)*nsig/ (maxx - minx)
+            norm = len(vals) * nsig / (maxx - minx)
         else:
             norm = nsig / (maxx - minx)
         for i in x:
@@ -404,9 +403,9 @@ def plot_value_filters(galaxies, valuex, valuey, filt="avg", axis=None):
         "button_press_event", lambda x: resu.print_closest([x.xdata, x.ydata], vals)
     )
 
+
 def plot_values_2s(galaxies1, galaxies2, valuex, valuey, axis=None):
-    """!!!
-    """
+    """!!!"""
     if axis is not None:
         ax = axis
         fig = plt.gcf()
@@ -654,7 +653,13 @@ def plot_smooth2d_comp(gals_list, valuex, valuey, filt="avg", axis=None, alpha=0
         else:
             lab = f"({len(valsx)})"
         sns.kdeplot(
-            x=valsx, y=valsy, fill=True, cmap="Oranges", ax=ax, bw_adjust=0.3, alpha=alpha
+            x=valsx,
+            y=valsy,
+            fill=True,
+            cmap="Oranges",
+            ax=ax,
+            bw_adjust=0.3,
+            alpha=alpha,
         )
     else:
         ax.set_title(f"Approximate distribution comparison of {valuex}")
@@ -708,7 +713,15 @@ def plot_smooth2d_subt(gals, valuex, valuey, filt="avg", axis=None, rang=None):
 
 
 def plot_points(
-    gals_list, value, filt="avg", names=[], xranges=[], axis=None, xalpha=1, yalpha=1, percentiles = (33,67)
+    gals_list,
+    value,
+    filt="avg",
+    names=[],
+    xranges=[],
+    axis=None,
+    xalpha=1,
+    yalpha=1,
+    percentiles=(33, 67),
 ):
     """Plot a very simple plot with one point per set of galaxies and
     appropriate error bars. !!!
@@ -765,15 +778,22 @@ def plot_points(
         means,
         marker="D",
         c="#e70000a0",
-        markeredgecolor = "#8b0000b1",
+        markeredgecolor="#8b0000b1",
         markersize=5,
         linestyle="",
         label="mean",
         linewidth=1.5,
-        alpha = None
+        alpha=None,
     )
     ax.plot(
-        x, medians, marker="", c="#e70000ff", markersize=12, linestyle=":", label="median", linewidth=2.5
+        x,
+        medians,
+        marker="",
+        c="#e70000ff",
+        markersize=12,
+        linestyle=":",
+        label="median",
+        linewidth=2.5,
     )
     # ax.plot(x, means, c="darkred", alpha=0.85, linewidth=1.3, linestyle="dotted")
     ax.set_ylabel(value)
@@ -889,7 +909,7 @@ def plot_violin(gals_list, value, filt="avg", names=[], xranges=[], axis=None):
             split=True,
             palette={0: "#ffa333", 1: "#ffa333"},
             ax=ax,
-            alpha = 0.7,
+            alpha=0.7,
             inner=None,
             bw_adjust=0.6,
             linecolor="#854900d5",
@@ -897,10 +917,10 @@ def plot_violin(gals_list, value, filt="avg", names=[], xranges=[], axis=None):
         )
         if not i % 2:
             ax.collections[-2].set_alpha(0)
-            ax.collections[-1].set(facecolor="#4b92c3", alpha = 0.8, edgecolor="#1d3e55")
+            ax.collections[-1].set(facecolor="#4b92c3", alpha=0.8, edgecolor="#1d3e55")
         else:
             ax.collections[-1].set_alpha(0)
-            ax.collections[-2].set(facecolor="#ffa333", alpha = 0.8)
+            ax.collections[-2].set(facecolor="#ffa333", alpha=0.8)
     ax.set_ylabel(value)
     ax.legend()
 
@@ -994,7 +1014,13 @@ def points_multi_bins(
 
 
 def points_multi_clas(
-    galaxies, value, filt="avg", axis=None, no_legend=False, new_names=None, percentiles = (33,67)
+    galaxies,
+    value,
+    filt="avg",
+    axis=None,
+    no_legend=False,
+    new_names=None,
+    percentiles=(33, 67),
 ):
     """!!!"""
     if new_names is None:
@@ -1024,7 +1050,11 @@ def points_multi_clas(
     c = 0
     for k in separ:
         plot_points(
-            (separ[k][1], separ[k][0]), value, names=["non-" + k, k], axis=axs[c], percentiles = percentiles
+            (separ[k][1], separ[k][0]),
+            value,
+            names=["non-" + k, k],
+            axis=axs[c],
+            percentiles=percentiles,
         )
         plot_violin(
             (separ[k][1], separ[k][0]), value, names=["non-" + k, k], axis=axs[c]

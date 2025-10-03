@@ -3,6 +3,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 
+import config
 import resu
 import run
 import vis
@@ -10,16 +11,15 @@ from ren_values import *
 
 """To generate the plots, first update the paths bellow to correspond to the location of the output/input dictionaries. 
 """
-remove = ["GS4_18890", "COS4_17600", "GS4_19797", "COS4_05758", "U4_28125", "G4_06569", "GS4_30028", "GS4_29773"]
-rem_g = [{"name":g} for g in remove]
+rem_g = [{"name": g} for g in config.remove_names]
 
-raw_o = run.fetch_json("dict_out/out_full_matched_5_m.json")["galaxies"]
+raw_o = run.fetch_json(config.dict_paths["out"])["galaxies"]
 raw = resu.get_complement(raw_o, rem_g)
 
 fil = resu.galaxy_pruning(raw)
 
 
-def ginim20_redshift(save = None):
+def ginim20_redshift(save=None):
     fig, axs = plt.subplots()
     z = resu.get_separate_in_value(fil, "z bin")
     rang = ((-2.3, -0.8), (0.38, 0.64))
@@ -86,7 +86,8 @@ def ginim20_redshift(save = None):
     if save is not None:
         fig.savefig(save)
 
-def ca_redshift(save = None):
+
+def ca_redshift(save=None):
     fig, axs = plt.subplots()
     z = resu.get_separate_in_value(fil, "z bin")
     rang = ((2.5, 3.5), (0, 0.3))
@@ -149,7 +150,8 @@ def ca_redshift(save = None):
     if save is not None:
         fig.savefig(save)
 
-def mid_bins(save = None):
+
+def mid_bins(save=None):
     vis.plot_grided(
         fil,
         ["M", "I", "D"],
@@ -190,7 +192,8 @@ def mid_bins(save = None):
     if save is not None:
         fig.savefig(save)
 
-def cas_bins(save = None):
+
+def cas_bins(save=None):
     vis.plot_grided(
         fil,
         ["C", "A", "S"],
@@ -231,7 +234,8 @@ def cas_bins(save = None):
     if save is not None:
         fig.savefig(save)
 
-def ser_bins(save = None):
+
+def ser_bins(save=None):
     vis.plot_grided(
         fil,
         ["sersic_n", "sersic_rhalf", "sersic_amplitude"],
@@ -272,7 +276,8 @@ def ser_bins(save = None):
     if save is not None:
         fig.savefig(save)
 
-def gm20_bins(save = None):
+
+def gm20_bins(save=None):
     vis.plot_grided(
         fil,
         ["Gini", "M20", "S(G, M20)", "F(G, M20)"],
@@ -315,7 +320,8 @@ def gm20_bins(save = None):
     if save is not None:
         fig.savefig(save)
 
-def mid_evol(save = None):
+
+def mid_evol(save=None):
     vis.plot_grided(
         fil,
         ["M", "I", "D"],
@@ -365,7 +371,8 @@ def mid_evol(save = None):
     if save is not None:
         fig.savefig(save)
 
-def cas_evol(save = None):
+
+def cas_evol(save=None):
     vis.plot_grided(
         fil,
         ["C", "A", "S"],
@@ -415,7 +422,8 @@ def cas_evol(save = None):
     if save is not None:
         fig.savefig(save)
 
-def ser_evol(save = None):
+
+def ser_evol(save=None):
     vis.plot_grided(
         fil,
         ["sersic_n", "sersic_rhalf", "sersic_amplitude"],
@@ -465,7 +473,8 @@ def ser_evol(save = None):
     if save is not None:
         fig.savefig(save)
 
-def gm20_evol(save = None):
+
+def gm20_evol(save=None):
     vis.plot_grided(
         fil,
         ["Gini", "M20", "S(G, M20)", "F(G, M20)"],
@@ -516,16 +525,17 @@ def gm20_evol(save = None):
     if save is not None:
         fig.savefig(save)
 
+
 if __name__ == "__main__":
     """Comment out lines corresponding to plots you want to create."""
-    #ginim20_redshift(save = "../../out/supl/josef_z_gm20.png")
-    #ca_redshift(save = "../../out/supl/josef_z_cas.png")
-    #mid_bins(save = "../../out/supl/josef_mid_bins.png")
-    #cas_bins(save = "../../out/supl/josef_cas_bins.png")
-    #ser_bins(save = "../../out/supl/josef_ser_bins.png")
-    #gm20_bins(save = "../../out/supl/josef_gm20_bins.png")
-    #mid_evol(save = "../../out/supl/josef_mid_evol.png")
-    #cas_evol(save = "../../out/supl/josef_cas_evol.png")
-    #ser_evol(save = "../../out/supl/josef_ser_evol.png")
-    #gm20_evol(save = "../../out/supl/josef_gm20_evol.png")
+    # ginim20_redshift(save = "../../out/supl/josef_z_gm20.png")
+    # ca_redshift(save = "../../out/supl/josef_z_cas.png")
+    # mid_bins(save = "../../out/supl/josef_mid_bins.png")
+    # cas_bins(save = "../../out/supl/josef_cas_bins.png")
+    # ser_bins(save = "../../out/supl/josef_ser_bins.png")
+    # gm20_bins(save = "../../out/supl/josef_gm20_bins.png")
+    # mid_evol(save = "../../out/supl/josef_mid_evol.png")
+    # cas_evol(save = "../../out/supl/josef_cas_evol.png")
+    # ser_evol(save = "../../out/supl/josef_ser_evol.png")
+    # gm20_evol(save = "../../out/supl/josef_gm20_evol.png")
     plt.show()

@@ -16,6 +16,7 @@ import json
 import cv2
 import numpy as np
 
+import config
 import psfm
 import run
 
@@ -56,6 +57,7 @@ def get_galaxy_entry(galaxies_full, gal_name, fil_names=None):
                 return None
     return None
 
+
 def get_galaxies_filter(galaxies, filt):
     """Gets galaxies with a specified filter."""
     gals = []
@@ -65,6 +67,7 @@ def get_galaxies_filter(galaxies, filt):
         if gf is not None:
             gals.append(gf)
     return gals
+
 
 def get_bad_frames(galaxy, strength="normal"):
     """Gets indexes of bad frames in a galaxy.
@@ -425,7 +428,7 @@ def get_galaxy(name, psf_res=None):
     than larger sample. Useful for checking e.g. how the segmentation map
     looked for some problematic cases.
     """
-    filj = run.fetch_json("dict_in/dictionary_full.json")["galaxies"]
+    filj = run.fetch_json(config.def_dict_in)["galaxies"]
     gal_entry = get_galaxy_entry(filj, name)
     return run.calculate_stmo(gal_entry, psf_res=psf_res)
 
@@ -661,9 +664,7 @@ def get_maximal_psf_width(galaxies, return_full=True, enforce_filter=None):
         return max_fwhm
 
 
-def manual_reev_c(
-    galaxies, im_path="../statmorph_images_filtered/name.png", out_path=None
-):
+def manual_reev_c(galaxies, im_path=config.def_image_path, out_path=None):
     """Allows for reevaluation of flagging of a given set of galaxies. For
     each galaxy opens its statmorph image output if available and asks user
     for new flag in interactive cli.
@@ -713,16 +714,20 @@ def manual_reev_c(
         run.save_as_json({"galaxies": gals}, out_path)
     return gals
 
-def find_duplicates(galaxies, margin = 0.002, mdif = 0.05):
+
+def find_duplicates(galaxies, margin=0.002, mdif=0.05):
     l = []
     for g in galaxies:
         ll = set()
         for gc in galaxies:
-            distra = gc["info"]["RA"]-g["info"]["RA"]
-            distde = gc["info"]["DEC"]-g["info"]["DEC"]
-            dist = np.sqrt(distra**2+distde**2)
-            mass = np.abs(gc["info"]["LMSTAR"]-g["info"]["LMSTAR"])/g["info"]["LMSTAR"]
+            distra = gc["info"]["RA"] - g["info"]["RA"]
+            distde = gc["info"]["DEC"] - g["info"]["DEC"]
+            dist = np.sqrt(distra**2 + distde**2)
+            mass = (
+                np.abs(gc["info"]["LMSTAR"] - g["info"]["LMSTAR"]) / g["info"]["LMSTAR"]
+            )
             if dist < margin and mass < mdif:
                 ll.add(gc["name"])
-        if ll not in l: l.append(ll)
-    return [g for g in l if len(g)>1]
+        if ll not in l:
+            l.append(ll)
+    return [g for g in l if len(g) > 1]

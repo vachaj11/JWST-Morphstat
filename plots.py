@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Polygon
 
+import config
 import line_separation as ls
 import resu
 import run
@@ -21,34 +22,33 @@ plt.rcParams.update(
 """To generate the plots, first update the paths bellow to correspond to the location of the output/input dictionaries. 
 """
 
-remove = ["GS4_18890", "COS4_17600", "GS4_19797", "COS4_05758", "U4_28125", "G4_06569", "GS4_30028", "GS4_29773"]
-rem_g = [{"name":g} for g in remove]
+rem_g = [{"name": g} for g in config.remove_names]
 
-# main data 
-raw_o = run.fetch_json("dict_out/out_full_matched_5_m.json")["galaxies"]
+# main data
+raw_o = run.fetch_json(config.dict_paths["out"])["galaxies"]
 raw = resu.get_complement(raw_o, rem_g)
-bulges = run.fetch_json("dict_in/n4_Bulge.json")["galaxies"]
-mergers = run.fetch_json("dict_in/n4_Interacting-Merger.json")["galaxies"]
-clumpy = run.fetch_json("dict_in/n4_Clumpy.json")["galaxies"]
-ful_o = run.fetch_json("dict_in/dictionary_full.json")["galaxies"]
+bulges = run.fetch_json(config.dict_paths["bulge"])["galaxies"]
+mergers = run.fetch_json(config.dict_paths["merger"])["galaxies"]
+clumpy = run.fetch_json(config.dict_paths["clumpy"])["galaxies"]
+ful_o = run.fetch_json(config.dict_paths["full"])["galaxies"]
 full = resu.get_complement(ful_o, rem_g)
 
 # sersic data
-ser_o = run.fetch_json("dict_out/out_full_444.json")["galaxies"]
+ser_o = run.fetch_json(config.dict_paths["ser_444"])["galaxies"]
 sers = resu.get_complement(ser_o, rem_g)
-ser150_o = run.fetch_json("dict_out/out_full_150.json")["galaxies"]
+ser150_o = run.fetch_json(config.dict_paths["ser_150"])["galaxies"]
 sers150 = resu.get_complement(ser150_o, rem_g)
-ser150hst_o = run.fetch_json("dict_out/out_full_150_hst.json")["galaxies"]
+ser150hst_o = run.fetch_json(config.dict_paths["ser_150_hst"])["galaxies"]
 sers150hst = resu.get_complement(ser150hst_o, rem_g)
-serhst = run.fetch_json("dict_out/out_hst_160_full.json")["galaxies"]
+serhst = run.fetch_json(config.dict_paths["ser_hst_160"])["galaxies"]
 sershst = resu.get_complement(serhst, rem_g)
-ser150sc_o = run.fetch_json("dict_out/out_full_150_scaled.json")["galaxies"]
+ser150sc_o = run.fetch_json(config.dict_paths["ser_150_scaled"])["galaxies"]
 sers150sc = resu.get_complement(ser150sc_o, rem_g)
-ser150sc3_o = run.fetch_json("dict_out/out_full_150_scaled_3.json")["galaxies"]
+ser150sc3_o = run.fetch_json(config.dict_paths["ser_150_scaled_3"])["galaxies"]
 sers150sc3 = resu.get_complement(ser150sc3_o, rem_g)
-sers150sc30_o = run.fetch_json("dict_out/out_full_150_scaled_30.json")["galaxies"]
+sers150sc30_o = run.fetch_json(config.dict_paths["ser_150_scaled_30"])["galaxies"]
 sers150sc30 = resu.get_complement(sers150sc30_o, rem_g)
-sersfull_o = run.fetch_json("dict_out/out_full_sersic.json")["galaxies"]
+sersfull_o = run.fetch_json(config.dict_paths["ser_full"])["galaxies"]
 sersfull = resu.get_complement(sersfull_o, rem_g)
 
 fil = resu.galaxy_pruning(raw)
@@ -68,7 +68,8 @@ fils150sc3 = resu.galaxy_pruning(sers150sc3, strength="sersic")
 fils150sc30 = resu.galaxy_pruning(sers150sc30, strength="sersic")
 filsfull = resu.galaxy_pruning(sersfull, strength="sersic")
 
-def mergers_separation(mass = None, save = None, e = None, axis = None):
+
+def mergers_separation(mass=None, save=None, e=None, axis=None):
     if mass is None:
         filhmm = filmm
         filhom = filom
@@ -88,17 +89,16 @@ def mergers_separation(mass = None, save = None, e = None, axis = None):
         fig = plt.gcf()
         axs = axis
     blist = []
-    point, slope, diff = ls.max_sep(filhmm, filhom, "M20", "Gini", e = e, rfull=blist)
-    po_co = ls.error_poly_2(blist, 0.01, (-2.3,-0.8), (0.38, 0.64),mdif=diff[0])
+    point, slope, diff = ls.max_sep(filhmm, filhom, "M20", "Gini", e=e, rfull=blist)
+    po_co = ls.error_poly_2(blist, 0.01, (-2.3, -0.8), (0.38, 0.64), mdif=diff[0])
     poly = Polygon(po_co, color="#ffb6b6ff")
     axs.add_patch(poly)
-    vis.plot_correlation_filters((filhom, filhmm), "M20", "Gini", axis = axs)
+    vis.plot_correlation_filters((filhom, filhmm), "M20", "Gini", axis=axs)
     x = np.array([-2.3, -0.8])
-
 
     mmabove = ls.get_above_line(filhmm, "M20", "Gini", [0, 0.33], -0.14)
     omabove = ls.get_above_line(filhom, "M20", "Gini", [0, 0.33], -0.14)
-    tabove = ls.get_above_line(filhom+filhmm, "M20", "Gini", [0, 0.33], -0.14)
+    tabove = ls.get_above_line(filhom + filhmm, "M20", "Gini", [0, 0.33], -0.14)
     print("\n------------------")
     print("Mergers separation")
     print("------------------")
@@ -108,14 +108,19 @@ def mergers_separation(mass = None, save = None, e = None, axis = None):
     print(
         f"{100*mmabove[1][0]:.1f} % mergers above, {omabove[1][1]*100:.1f} % non-mergers bellow"
     )
-    print(f"{tabove[2][0]*100:.1f} % merger fraction, in the sample {diff[2][1]*100:.1f} %")
+    print(
+        f"{tabove[2][0]*100:.1f} % merger fraction, in the sample {diff[2][1]*100:.1f} %"
+    )
     print("------------------")
     print("Best separation line:")
     print(f"Gini = M_20*({slope:.3f})+({point[1]-slope*point[0]:.3f})")
     print("Separation:")
     print(
-        f"{100*diff[1][0]:.1f} % mergers above, {diff[1][1]*100:.1f} % non-mergers bellow")
-    print(f"{diff[2][0]*100:.1f} % merger fraction, in the sample {diff[2][1]*100:.1f} %")
+        f"{100*diff[1][0]:.1f} % mergers above, {diff[1][1]*100:.1f} % non-mergers bellow"
+    )
+    print(
+        f"{diff[2][0]*100:.1f} % merger fraction, in the sample {diff[2][1]*100:.1f} %"
+    )
     print("------------------\n")
 
     axs.plot(
@@ -124,14 +129,14 @@ def mergers_separation(mass = None, save = None, e = None, axis = None):
         linestyle="--",
         linewidth=2.5,
         c="black",
-        label=f"Lotz et al. (2008)",# $C={2-mmabove[1][0]-omabove[1][1]:.2f}$",
+        label=f"Lotz et al. (2008)",  # $C={2-mmabove[1][0]-omabove[1][1]:.2f}$",
     )
     axs.plot(
         x,
         (point[0] - x) * (-slope) + point[1],
         linewidth=2.5,
         c="#e70000ff",
-        label=f"line of best separation",# $C_{{\mathrm{{min}}}}={1-diff[0]:.2f}$",
+        label=f"line of best separation",  # $C_{{\mathrm{{min}}}}={1-diff[0]:.2f}$",
     )
 
     axs.set_xlabel("M$_{20}$")
@@ -146,12 +151,12 @@ def mergers_separation(mass = None, save = None, e = None, axis = None):
     )
     """
     axs.lines[0].set(
-        c="#267ab46b", markeredgecolor="#00346899", markersize=10, alpha = None
+        c="#267ab46b", markeredgecolor="#00346899", markersize=10, alpha=None
     )
     axs.lines[1].set(
-        c="#ff910c7c", markeredgecolor="#854900d5", markersize=13, alpha = None
+        c="#ff910c7c", markeredgecolor="#854900d5", markersize=13, alpha=None
     )
-    L = axs.legend(loc = 3)
+    L = axs.legend(loc=3)
     L.texts[0].set_text("others (" + L.texts[0]._text.split("(")[-1])
     L.texts[1].set_text("interact./mergers (" + L.texts[1]._text.split("(")[-1])
     axs.set_xlim(x)
@@ -173,7 +178,8 @@ def mergers_separation(mass = None, save = None, e = None, axis = None):
         if save is not None:
             fig.savefig(save)
 
-def mergers_nstatistics(mass = None, save = None, e = None):
+
+def mergers_nstatistics(mass=None, save=None, e=None):
     if mass is None:
         filhmm = filmm
         filhom = filom
@@ -187,8 +193,10 @@ def mergers_nstatistics(mass = None, save = None, e = None):
         print("Unknown mass bin: " + str(mass))
         return None
     blist = []
-    point, slope, diff = ls.max_sep(filhmm, filhom, "M20", "Gini", param="NM", e = e, rfull=blist)
-    po_co = ls.error_poly(blist, 0.01, (-2.3,-0.8), (0.38, 0.64))
+    point, slope, diff = ls.max_sep(
+        filhmm, filhom, "M20", "Gini", param="NM", e=e, rfull=blist
+    )
+    po_co = ls.error_poly(blist, 0.01, (-2.3, -0.8), (0.38, 0.64))
     poly = Polygon(po_co, color="grey")
     axs.add_patch(poly)
     vis.plot_ref_hist(
@@ -208,7 +216,7 @@ def mergers_nstatistics(mass = None, save = None, e = None):
         f"{100*(diff[1][0]):.1f} % mergers on right, {(diff[1][1])*100:.1f} % non-mergers on left"
     )
     print("------------------\n")
-    
+
     axs.plot(
         [x, x],
         [0, 14],
@@ -249,7 +257,8 @@ def mergers_nstatistics(mass = None, save = None, e = None):
     if save is not None:
         fig.savefig(save)
 
-def mergers_separation_a(mass = None, save = None, e = None):
+
+def mergers_separation_a(mass=None, save=None, e=None):
     if mass is None:
         filhmm = filmm
         filhom = filom
@@ -287,8 +296,8 @@ def mergers_separation_a(mass = None, save = None, e = None):
     )
     mmabove = ls.get_above_line(filhmm, "A", "A", [0.35, 0.35], 2)
     omabove = ls.get_above_line(filhom, "A", "A", [0.35, 0.35], 2)
-    tabove = ls.get_above_line(filhom+filhmm, "A", "A", [0.35, 0.35], 2)
-    print("\n------------------")    
+    tabove = ls.get_above_line(filhom + filhmm, "A", "A", [0.35, 0.35], 2)
+    print("\n------------------")
     print("Mergers separation")
     print("------------------")
     print("Line used in literature:")
@@ -297,7 +306,9 @@ def mergers_separation_a(mass = None, save = None, e = None):
     print(
         f"{100*(1-mmabove[1][0]):.1f} % mergers on right, {(1-omabove[1][1])*100:.1f} % non-mergers on left"
     )
-    print(f"{tabove[2][0]*100:.1f} % merger fraction, in the sample {diff[2][1]*100:.1f} %")
+    print(
+        f"{tabove[2][0]*100:.1f} % merger fraction, in the sample {diff[2][1]*100:.1f} %"
+    )
     print("------------------")
     print("Best separation line:")
     print(f"A = {x:.3f}")
@@ -305,17 +316,27 @@ def mergers_separation_a(mass = None, save = None, e = None):
     print(
         f"{100*(1-diff[1][0]):.1f} % mergers on right, {(1-diff[1][1])*100:.1f} % non-mergers on left"
     )
-    print(f"{diff[2][0]*100:.1f} % merger fraction, in the sample {diff[2][1]*100:.1f} %")
+    print(
+        f"{diff[2][0]*100:.1f} % merger fraction, in the sample {diff[2][1]*100:.1f} %"
+    )
     print("------------------\n")
 
-    axs.set_xlabel("Asymmetry statistics", fontsize = 19)
-    axs.set_ylabel("Normalised distribution", fontsize = 19)
+    axs.set_xlabel("Asymmetry statistics", fontsize=19)
+    axs.set_ylabel("Normalised distribution", fontsize=19)
     axs.set_title("")  # Gini-M$_{20}$ statistics for non/mergers")
     axs.patches[0].set(
-        edgecolor="#00346899", facecolor="#1973b19d", fill=True, linewidth=1.25, alpha = None
+        edgecolor="#00346899",
+        facecolor="#1973b19d",
+        fill=True,
+        linewidth=1.25,
+        alpha=None,
     )
     axs.patches[1].set(
-        edgecolor="#854900d5", facecolor="#ff8e049f", fill=True, linewidth=1.25, alpha = None
+        edgecolor="#854900d5",
+        facecolor="#ff8e049f",
+        fill=True,
+        linewidth=1.25,
+        alpha=None,
     )
     axs.lines[0].set(c="#004d99ff", linewidth=2.5)
     axs.lines[1].set(c="#b86500ff", linewidth=2.5)
@@ -341,7 +362,7 @@ def mergers_separation_a(mass = None, save = None, e = None):
         fig.savefig(save)
 
 
-def bulges_separation(mass = None, save = None, e = None, axis = None):
+def bulges_separation(mass=None, save=None, e=None, axis=None):
     if mass is None:
         filhmb = filmb
         filhob = filob
@@ -362,10 +383,10 @@ def bulges_separation(mass = None, save = None, e = None, axis = None):
         axs = axis
     blist = []
     point, slope, diff = ls.max_sep(filhmb, filhob, "M20", "Gini", e=e, rfull=blist)
-    po_co = ls.error_poly_2(blist, 0.01, (-2.3,-0.8), (0.38, 0.64))
+    po_co = ls.error_poly_2(blist, 0.01, (-2.3, -0.8), (0.38, 0.64))
     poly = Polygon(po_co, color="#ffb6b6ff")
     axs.add_patch(poly)
-    vis.plot_correlation_filters((filhob, filhmb), "M20", "Gini", axis = axs)
+    vis.plot_correlation_filters((filhob, filhmb), "M20", "Gini", axis=axs)
     x = np.array([-2.3, -0.8])
     """
     axs.plot(
@@ -377,10 +398,10 @@ def bulges_separation(mass = None, save = None, e = None, axis = None):
         label="early/late boundary",
     )
     """
-    
+
     mbabove = ls.get_above_line(filhmb, "M20", "Gini", [0, 0.8], 0.14)
     obabove = ls.get_above_line(filhob, "M20", "Gini", [0, 0.8], 0.14)
-    tabove = ls.get_above_line(filhob+filhmb, "M20", "Gini", [0, 0.8], 0.14)
+    tabove = ls.get_above_line(filhob + filhmb, "M20", "Gini", [0, 0.8], 0.14)
     print("\n-----------------")
     print("Bulges separation")
     print("-----------------")
@@ -390,7 +411,9 @@ def bulges_separation(mass = None, save = None, e = None, axis = None):
     print(
         f"{100*(1-mbabove[1][0]):.1f} % bulges bellow, {(1-obabove[1][1])*100:.1f} % non-bulges above"
     )
-    print(f"{tabove[2][0]*100:.1f} % bulge fraction, in the sample {diff[2][1]*100:.1f} %")
+    print(
+        f"{tabove[2][0]*100:.1f} % bulge fraction, in the sample {diff[2][1]*100:.1f} %"
+    )
     print("-----------------")
     print("Best separation line:")
     print(f"Gini = M_20*({slope:.3f})+({point[1]-slope*point[0]:.3f})")
@@ -398,7 +421,9 @@ def bulges_separation(mass = None, save = None, e = None, axis = None):
     print(
         f"{100*(1-diff[1][0]):.1f} % bulges bellow, {(1-diff[1][1])*100:.1f} % non-bulges above"
     )
-    print(f"{diff[2][0]*100:.1f} % bulge fraction, in the sample {diff[2][1]*100:.1f} %")
+    print(
+        f"{diff[2][0]*100:.1f} % bulge fraction, in the sample {diff[2][1]*100:.1f} %"
+    )
     print("-----------------\n")
 
     axs.plot(
@@ -406,19 +431,19 @@ def bulges_separation(mass = None, save = None, e = None, axis = None):
         (point[0] - x) * (-slope) + point[1],
         linewidth=2.5,
         c="#e70000ff",
-        label=f"line of best separation",# $C_{{\mathrm{{min}}}}={1-diff[0]:.2f}$",
+        label=f"line of best separation",  # $C_{{\mathrm{{min}}}}={1-diff[0]:.2f}$",
     )
 
     axs.set_xlabel("M$_{20}$")
     axs.set_ylabel("Gini")
     axs.set_title("")  # Gini-M$_{20}$ statistics for non/bulges")
     axs.lines[0].set(
-        c="#267ab46b", markeredgecolor="#00346899", markersize=10, alpha = None
+        c="#267ab46b", markeredgecolor="#00346899", markersize=10, alpha=None
     )
     axs.lines[1].set(
-        c="#ff910c54", markeredgecolor="#8549009b", markersize=10, alpha = None
+        c="#ff910c54", markeredgecolor="#8549009b", markersize=10, alpha=None
     )
-    L = axs.legend(loc = 1)
+    L = axs.legend(loc=1)
     L.texts[0].set_text("without bulge (" + L.texts[0]._text.split("(")[-1])
     L.texts[1].set_text("with bulge (" + L.texts[1]._text.split("(")[-1])
     axs.set_xlim(x)
@@ -440,7 +465,8 @@ def bulges_separation(mass = None, save = None, e = None, axis = None):
         if save is not None:
             fig.savefig(save)
 
-def bulges_nstatistics(mass = None, save = None, e = None):
+
+def bulges_nstatistics(mass=None, save=None, e=None):
     if mass is None:
         filhmb = filmb
         filhob = filob
@@ -453,7 +479,7 @@ def bulges_nstatistics(mass = None, save = None, e = None):
     else:
         print("Unknown mass bin: " + str(mass))
         return None
-    point, slope, diff = ls.max_sep(filhmb, filhob, "M20", "Gini", param="NM", e = e)
+    point, slope, diff = ls.max_sep(filhmb, filhob, "M20", "Gini", param="NM", e=e)
     vis.plot_ref_hist(
         (filhob, filhmb), "NM", pdf=True, bins=17, names=["non-bulges", "bulges"]
     )
@@ -509,8 +535,9 @@ def bulges_nstatistics(mass = None, save = None, e = None):
     fig.set_layout_engine(layout="tight")
     if save is not None:
         fig.savefig(save)
-        
-def clumpy_separation(mass = None, save = None, e = None, axis = None):
+
+
+def clumpy_separation(mass=None, save=None, e=None, axis=None):
     if mass is None:
         filhmc = filmc
         filhoc = filoc
@@ -530,11 +557,11 @@ def clumpy_separation(mass = None, save = None, e = None, axis = None):
         fig = plt.gcf()
         axs = axis
     blist = []
-    point, slope, diff = ls.max_sep(filhmc, filhoc, "A", "Gini", e=e,rfull=blist)
-    po_co = ls.error_poly_2(blist, 0.01, (-0.05, 0.6), (0.38, 0.64),rt=False)
+    point, slope, diff = ls.max_sep(filhmc, filhoc, "A", "Gini", e=e, rfull=blist)
+    po_co = ls.error_poly_2(blist, 0.01, (-0.05, 0.6), (0.38, 0.64), rt=False)
     poly = Polygon(po_co, color="#ffb6b6ff")
     axs.add_patch(poly)
-    vis.plot_correlation_filters((filhoc, filhmc), "A", "Gini", axis = axs)
+    vis.plot_correlation_filters((filhoc, filhmc), "A", "Gini", axis=axs)
     x = np.array([-0.05, 0.6])
 
     """
@@ -548,7 +575,6 @@ def clumpy_separation(mass = None, save = None, e = None, axis = None):
     )
     """
 
-    
     print("\n-----------------")
     print("Clumpy separation")
     print("-----------------")
@@ -558,26 +584,28 @@ def clumpy_separation(mass = None, save = None, e = None, axis = None):
     print(
         f"{100*(1-diff[1][0]):.1f} % clumpy bellow, {(1-diff[1][1])*100:.1f} % non-clumpy above"
     )
-    print(f"{diff[2][0]*100:.1f} % clumpy fraction, in the sample {diff[2][1]*100:.1f} %")
+    print(
+        f"{diff[2][0]*100:.1f} % clumpy fraction, in the sample {diff[2][1]*100:.1f} %"
+    )
     print("-----------------\n")
     axs.plot(
         x,
         (point[0] - x) * (-slope) + point[1],
         linewidth=2.5,
         c="#e70000ff",
-        label=f"line of best separation",# $C_{{\mathrm{{min}}}}={1-diff[0]:.2f}$",
+        label=f"line of best separation",  # $C_{{\mathrm{{min}}}}={1-diff[0]:.2f}$",
     )
 
     axs.set_xlabel("Asymmetry, $A$")
     axs.set_ylabel("Gini")
     axs.set_title("")  # Gini-M$_{20}$ statistics for non/bulges")
     axs.lines[0].set(
-        c="#267ab46b", markeredgecolor="#00346899", markersize=10, alpha = None
+        c="#267ab46b", markeredgecolor="#00346899", markersize=10, alpha=None
     )
     axs.lines[1].set(
-        c="#ff910c7c", markeredgecolor="#854900d5", markersize=13, alpha = None
+        c="#ff910c7c", markeredgecolor="#854900d5", markersize=13, alpha=None
     )
-    L = axs.legend(loc = 2)
+    L = axs.legend(loc=2)
     L.texts[0].set_text("non-clumpy (" + L.texts[0]._text.split("(")[-1])
     L.texts[1].set_text("clumpy (" + L.texts[1]._text.split("(")[-1])
     axs.set_xlim(x)
@@ -599,7 +627,8 @@ def clumpy_separation(mass = None, save = None, e = None, axis = None):
         if save is not None:
             fig.savefig(save)
 
-def optimal_rfw(save = None):
+
+def optimal_rfw(save=None):
     fullg = []
     # full = resu.get_rfw_range((0.5,1.37), full)
     for g in full:
@@ -611,8 +640,10 @@ def optimal_rfw(save = None):
                 elif len(g[k]) == len(g["filters"]):
                     gm[k] = [g[k][i]]
             fullg.append(gm)
-    for g in fullg:
-        g["fileInfo"][0]["_wave"] = int(g["filters"][0][1:-1]) / 100
+    # Unnecessary and makes further assumptions about the input dictionary
+    # file structure.
+    # for g in fullg:
+    #     g["fileInfo"][0]["_wave"] = int(g["filters"][0][1:-1]) / 100
     for g in raw:
         g["frames"][0]["_wave"] = g["frames"][0]["_wavelength"]
     vis.plot_value_filters(fullg, "ZBEST", "_wave")
@@ -644,10 +675,10 @@ def optimal_rfw(save = None):
     axs.lines[1].set(c="red", markeredgecolor="red", markersize=7, alpha=0.4)
     """
     axs.lines[0].set(
-        c="#267ab44b", markeredgecolor="#0034685e", markersize=8, alpha = None
+        c="#267ab44b", markeredgecolor="#0034685e", markersize=8, alpha=None
     )
     axs.lines[1].set(
-        c="#ff910cab", markeredgecolor="#ba66017f", markersize=10, alpha = None
+        c="#ff910cab", markeredgecolor="#ba66017f", markersize=10, alpha=None
     )
     L = axs.legend(loc=8)
     L.texts[0].set_text("All available filters")
@@ -663,9 +694,9 @@ def optimal_rfw(save = None):
         "F182M",
         "F200W",
         "F210M",
-        'F250M', #10
+        "F250M",  # 10
         "F277W",
-        'F300M', #10
+        "F300M",  # 10
         "F335M",
         "F356W",
         "F410M",
@@ -705,7 +736,8 @@ def optimal_rfw(save = None):
     if save is not None:
         fig.savefig(save)
 
-def ren_et_al(save = None):
+
+def ren_et_al(save=None):
     vis.plot_grided(
         fil,
         ["C", "A", "Gini", "M20"],
@@ -768,7 +800,7 @@ def ren_et_al(save = None):
         label="Yao et al.",
         linestyle="",
         linewidth=1.3,
-        alpha = 0.6
+        alpha=0.6,
     )
     axes[2].plot(
         yao_a[0],
@@ -780,7 +812,7 @@ def ren_et_al(save = None):
         c="darkgreen",
         linestyle="",
         linewidth=1.3,
-        alpha = 0.6
+        alpha=0.6,
     )
     axes[4].plot(
         yao_g[0],
@@ -792,8 +824,8 @@ def ren_et_al(save = None):
         c="darkgreen",
         linestyle="",
         linewidth=1.3,
-        alpha = 0.6    
-        )
+        alpha=0.6,
+    )
     axes[6].plot(
         yao_m[0],
         yao_m[1],
@@ -804,7 +836,7 @@ def ren_et_al(save = None):
         c="darkgreen",
         linestyle="",
         linewidth=1.3,
-        alpha = 0.6 
+        alpha=0.6,
     )
     """
     axes[0].plot(
@@ -820,13 +852,13 @@ def ren_et_al(save = None):
         yao_m[0], yao_m[1], c="darkgreen", linestyle="dotted", linewidth=1.3, alpha=0.8
     )
     """
-    axes[0].plot(ren_cr[0], shiftsi[0](ren_cr[1]), c="blue", linestyle=":", label="Ren et al.")
+    axes[0].plot(
+        ren_cr[0], shiftsi[0](ren_cr[1]), c="blue", linestyle=":", label="Ren et al."
+    )
     axes[1].plot(ren_cm[0], shiftsi[0](ren_cm[1]), c="blue", linestyle=":")
     axes[2].plot(ren_ar[0], shiftsi[1](ren_ar[1]), c="blue", linestyle=":")
     axes[3].plot(ren_am[0], shiftsi[1](ren_am[1]), c="blue", linestyle=":")
-    axes[4].plot(
-        ren_gr[0], shiftsi[2](ren_gr[1]), c="blue", linestyle=":"
-    )
+    axes[4].plot(ren_gr[0], shiftsi[2](ren_gr[1]), c="blue", linestyle=":")
     axes[5].plot(ren_gm[0], shiftsi[2](ren_gm[1]), c="blue", linestyle=":")
     axes[6].plot(ren_mr[0], shiftsi[3](ren_mr[1]), c="blue", linestyle=":")
     axes[7].plot(ren_mm[0], shiftsi[3](ren_mm[1]), c="blue", linestyle=":")
@@ -849,12 +881,12 @@ def ren_et_al(save = None):
         axes[i].errorbar(x,shifts[i//2](y), yerr=(np.abs(shifts[i//2](y)-shifts[i//2](yl)),np.abs(shifts[i//2](yu)-shifts[i//2](y))), c= "gray", capsize = 5, alpha = 0.8)
     """
 
-    axes[0].set_ylabel("Concentration, C", fontsize = 18)
-    axes[2].set_ylabel("Asymmetry, A", fontsize = 18)
-    axes[4].set_ylabel("Gini", fontsize = 18)
-    axes[6].set_ylabel("M$_{20}$", fontsize = 18)
-    axes[6].set_xlabel("Redshift", fontsize = 18)
-    axes[7].xaxis.get_label().set(fontsize = 18)
+    axes[0].set_ylabel("Concentration, C", fontsize=18)
+    axes[2].set_ylabel("Asymmetry, A", fontsize=18)
+    axes[4].set_ylabel("Gini", fontsize=18)
+    axes[6].set_ylabel("M$_{20}$", fontsize=18)
+    axes[6].set_xlabel("Redshift", fontsize=18)
+    axes[7].xaxis.get_label().set(fontsize=18)
     axes[0].set_ylim(2.25, 4)
     axes[2].set_ylim(0, 0.35)
     axes[4].set_ylim(0.425, 0.6)
@@ -884,7 +916,7 @@ def ren_et_al(save = None):
         axes[i].lines[6].set(linewidth=2.5)
         if i % 2 == 0:
             axes[i].lines[10].set(linewidth=2.5)
-        #if i % 2 == 1:
+        # if i % 2 == 1:
         #    axes[i].lines[4].set(marker="")
 
     axes[0].lines[4].set_label("_mean")
@@ -906,7 +938,8 @@ def ren_et_al(save = None):
     if save is not None:
         fig.savefig(save)
 
-def MID_classification(save = None):
+
+def MID_classification(save=None):
     vis.plot_grided(
         fil,
         ["M", "I", "D"],
@@ -939,7 +972,7 @@ def MID_classification(save = None):
         )
     for i in range(len(axes[4].patches)):
         axes[4].patches[i].set_label("_")
-    #for i in range(len(axes)):
+    # for i in range(len(axes)):
     #    axes[i].lines[4].set(linestyle= "")
     #    axes[i].lines[6].set(linestyle=":", linewidth = 2)
     L = axes[4].legend(loc=1)
@@ -950,8 +983,9 @@ def MID_classification(save = None):
     fig.set_layout_engine(layout="tight")
     if save is not None:
         fig.savefig(save)
-        
-def MID_classification_nb(save = None):
+
+
+def MID_classification_nb(save=None):
     vis.plot_grided(
         fil,
         ["M", "I", "D"],
@@ -959,7 +993,7 @@ def MID_classification_nb(save = None):
         vis.points_multi_clas,
         title="MID statistics for different morphology classifications",
         new_names={"mergers": "Interacting-Merger"},
-        percentiles = (16,84),
+        percentiles=(16, 84),
     )
     fig = plt.gcf()
     axes = fig.axes
@@ -968,9 +1002,9 @@ def MID_classification_nb(save = None):
     axes[2].set_ylim(-0.04, 0.4)
     axes[2].set_xlim(-0.3, 1.3)
     axes[2].set_xticks([0, 1], ["others", "interact./mergers"])
-    axes[0].set_ylabel("Multinode, $M$", fontsize = 18)
-    axes[1].set_ylabel("Intensity, $I$", fontsize = 18)
-    axes[2].set_ylabel("Deviation, $D$", fontsize = 18)
+    axes[0].set_ylabel("Multinode, $M$", fontsize=18)
+    axes[1].set_ylabel("Intensity, $I$", fontsize=18)
+    axes[2].set_ylabel("Deviation, $D$", fontsize=18)
     for ax in axes:
         ax.tick_params(
             axis="both",
@@ -985,7 +1019,7 @@ def MID_classification_nb(save = None):
         )
     for i in range(len(axes[2].patches)):
         axes[2].patches[i].set_label("_")
-    #for i in range(len(axes)):
+    # for i in range(len(axes)):
     #    axes[i].lines[4].set(linestyle= "")
     #    axes[i].lines[6].set(linestyle=":", linewidth = 2)
     L = axes[2].legend(loc=2)
@@ -997,49 +1031,58 @@ def MID_classification_nb(save = None):
     if save is not None:
         fig.savefig(save)
 
-def MID_classification_ho(save = None, log = False, pdf = True):
+
+def MID_classification_ho(save=None, log=False, pdf=True):
     fig = plt.figure()
     gs = fig.add_gridspec(3, 1)
     axes = gs.subplots()
     vis.plot_hist_comp(
-        (filom, filmm), "M", pdf=pdf, bins=15, joint_bins=True, axis = axes[0]
+        (filom, filmm), "M", pdf=pdf, bins=15, joint_bins=True, axis=axes[0]
     )
     vis.plot_hist_comp(
-        (filom, filmm), "I", pdf=pdf, bins=15, joint_bins=True, axis = axes[1]
+        (filom, filmm), "I", pdf=pdf, bins=15, joint_bins=True, axis=axes[1]
     )
     vis.plot_hist_comp(
-        (filom, filmm), "D", pdf=pdf, bins=15, joint_bins=True, axis = axes[2]
+        (filom, filmm), "D", pdf=pdf, bins=15, joint_bins=True, axis=axes[2]
     )
 
-    axes[0].set_xlabel("M", fontsize = 19)
-    axes[0].set_xlim(-0.04,0.715)
-    axes[1].set_xlabel("I", fontsize = 19)
-    axes[1].set_xlim(-0.055,0.957)
-    axes[2].set_xlabel("D", fontsize = 19)
-    axes[2].set_xlim(-0.028,0.478)
+    axes[0].set_xlabel("M", fontsize=19)
+    axes[0].set_xlim(-0.04, 0.715)
+    axes[1].set_xlabel("I", fontsize=19)
+    axes[1].set_xlim(-0.055, 0.957)
+    axes[2].set_xlabel("D", fontsize=19)
+    axes[2].set_xlim(-0.028, 0.478)
     if not log and pdf == True:
         axes[0].set_ylim(0, 18)
-        axes[1].set_ylim(0, 12)        
+        axes[1].set_ylim(0, 12)
         axes[2].set_ylim(0, 10.2)
     elif not log and pdf == "hist":
         axes[0].set_ylim(0, 0.84)
-        axes[1].set_ylim(0, 0.745)        
+        axes[1].set_ylim(0, 0.745)
         axes[2].set_ylim(0, 0.316)
     else:
         for axs in axes:
             axs.set_yscale("log")
-    
+
     for axs in axes:
-        axs.set_ylabel("Normalised distribution", fontsize = 17)
+        axs.set_ylabel("Normalised distribution", fontsize=17)
         axs.set_title("")  # Gini-M$_{20}$ statistics for non/mergers")
         axs.patches[0].set(
-            edgecolor="#00346899", facecolor="#1973b19d", fill=True, linewidth=1.25, alpha = None
+            edgecolor="#00346899",
+            facecolor="#1973b19d",
+            fill=True,
+            linewidth=1.25,
+            alpha=None,
         )
         axs.patches[1].set(
-            edgecolor="#854900d5", facecolor="#ff8e049f", fill=True, linewidth=1.25, alpha = None
+            edgecolor="#854900d5",
+            facecolor="#ff8e049f",
+            fill=True,
+            linewidth=1.25,
+            alpha=None,
         )
-        #axs.lines[0].set(c="#004d99ff", linewidth=2.5)
-        #axs.lines[1].set(c="#b86500ff", linewidth=2.5)
+        # axs.lines[0].set(c="#004d99ff", linewidth=2.5)
+        # axs.lines[1].set(c="#b86500ff", linewidth=2.5)
         axs.tick_params(
             axis="both",
             which="major",
@@ -1053,24 +1096,30 @@ def MID_classification_ho(save = None, log = False, pdf = True):
         )
         axs.get_legend().remove()
     L = axes[0].legend()
-    L.texts[0].set_text("others")# (" + L.texts[0]._text.split("(")[-1])
-    L.texts[1].set_text("interact./mergers")# (" + L.texts[1]._text.split("(")[-1])
+    L.texts[0].set_text("others")  # (" + L.texts[0]._text.split("(")[-1])
+    L.texts[1].set_text("interact./mergers")  # (" + L.texts[1]._text.split("(")[-1])
     fig.set_size_inches(4.5, 9)
     fig.set_layout_engine(layout="tight")
     if save is not None:
         fig.savefig(save)
-    
-def MID_classification_a(save = None, log = False, pdf = True, e = None):
+
+
+def MID_classification_a(save=None, log=False, pdf=True, e=None):
     fig = plt.figure()
-    axs = plt.subplot2grid((5,1), (0,0),rowspan = 2)
-    ax2 = plt.subplot2grid((5,1), (2,0))
-    ax3 = plt.subplot2grid((5,1), (3,0))
-    ax4 = plt.subplot2grid((5,1), (4,0))
+    axs = plt.subplot2grid((5, 1), (0, 0), rowspan=2)
+    ax2 = plt.subplot2grid((5, 1), (2, 0))
+    ax3 = plt.subplot2grid((5, 1), (3, 0))
+    ax4 = plt.subplot2grid((5, 1), (4, 0))
     axes = [axs, ax2, ax3, ax4]
-    
+
     point, slope, diff = ls.max_sep(filmm, filom, "A", "A", e=e)
     vis.plot_ref_hist(
-        (filom, filmm), "A", pdf=pdf, bins=13, names=["non-mergers", "mergers"], axis = axs
+        (filom, filmm),
+        "A",
+        pdf=pdf,
+        bins=13,
+        names=["non-mergers", "mergers"],
+        axis=axs,
     )
     x = (point[1] - point[0] * slope) / (1 - slope)
     axs.plot(
@@ -1092,43 +1141,51 @@ def MID_classification_a(save = None, log = False, pdf = True, e = None):
     axs.lines[1].set(c="#b86500ff", linewidth=2.5)
 
     vis.plot_hist_comp(
-        (filom, filmm), "M", pdf=pdf, bins=15, joint_bins=True, axis = axes[1]
+        (filom, filmm), "M", pdf=pdf, bins=15, joint_bins=True, axis=axes[1]
     )
     vis.plot_hist_comp(
-        (filom, filmm), "I", pdf=pdf, bins=15, joint_bins=True, axis = axes[2]
+        (filom, filmm), "I", pdf=pdf, bins=15, joint_bins=True, axis=axes[2]
     )
     vis.plot_hist_comp(
-        (filom, filmm), "D", pdf=pdf, bins=15, joint_bins=True, axis = axes[3]
+        (filom, filmm), "D", pdf=pdf, bins=15, joint_bins=True, axis=axes[3]
     )
-    axes[0].set_xlabel("Asymmetry, A", fontsize = 19)
+    axes[0].set_xlabel("Asymmetry, A", fontsize=19)
     axes[0].set_xlim(-0.063, 0.747)
-    axes[0].set_ylabel("Normalised distribution", fontsize = 19)
-    axes[1].set_xlabel("Multinode, M", fontsize = 19)
-    axes[1].set_xlim(-0.04,0.715)
-    axes[1].set_ylabel("Norm. dist.", fontsize = 15)
-    axes[2].set_xlabel("Intensity, I", fontsize = 19)
-    axes[2].set_xlim(-0.055,0.957)
-    axes[2].set_ylabel("Norm. dist.", fontsize = 15)
-    axes[3].set_xlabel("Deviation, D", fontsize = 19)
-    axes[3].set_xlim(-0.028,0.478)
-    axes[3].set_ylabel("Norm. dist.", fontsize = 15)
+    axes[0].set_ylabel("Normalised distribution", fontsize=19)
+    axes[1].set_xlabel("Multinode, M", fontsize=19)
+    axes[1].set_xlim(-0.04, 0.715)
+    axes[1].set_ylabel("Norm. dist.", fontsize=15)
+    axes[2].set_xlabel("Intensity, I", fontsize=19)
+    axes[2].set_xlim(-0.055, 0.957)
+    axes[2].set_ylabel("Norm. dist.", fontsize=15)
+    axes[3].set_xlabel("Deviation, D", fontsize=19)
+    axes[3].set_xlim(-0.028, 0.478)
+    axes[3].set_ylabel("Norm. dist.", fontsize=15)
     if pdf == True:
         axes[0].set_ylim(0, 8)
         axes[1].set_ylim(0, 18)
-        axes[2].set_ylim(0, 12)        
+        axes[2].set_ylim(0, 12)
         axes[3].set_ylim(0, 10.2)
     elif pdf == "hist":
         axes[0].set_ylim(0, 0.46)
         axes[1].set_ylim(0, 0.84)
-        axes[2].set_ylim(0, 0.745)        
+        axes[2].set_ylim(0, 0.745)
         axes[3].set_ylim(0, 0.316)
     for axis in axes:
         axis.set_title("")  # Gini-M$_{20}$ statistics for non/mergers")
         axis.patches[0].set(
-            edgecolor="#00346899", facecolor="#1973b19d", fill=True, linewidth=1.25, alpha = None
+            edgecolor="#00346899",
+            facecolor="#1973b19d",
+            fill=True,
+            linewidth=1.25,
+            alpha=None,
         )
         axis.patches[1].set(
-            edgecolor="#854900d5", facecolor="#ff8e049f", fill=True, linewidth=1.25, alpha = None
+            edgecolor="#854900d5",
+            facecolor="#ff8e049f",
+            fill=True,
+            linewidth=1.25,
+            alpha=None,
         )
         axis.tick_params(
             axis="both",
@@ -1150,7 +1207,8 @@ def MID_classification_a(save = None, log = False, pdf = True, e = None):
     if save is not None:
         fig.savefig(save)
 
-def sersic_comparison(f150 = 0, save = None, n_mult = 1, new = 0):
+
+def sersic_comparison(f150=0, save=None, n_mult=1, new=0):
     if not f150:
         ser = resu.galaxy_pruning(fils, strength="sersic")
         ylab = "\\textit{JWST} (F444W)"
@@ -1174,11 +1232,11 @@ def sersic_comparison(f150 = 0, save = None, n_mult = 1, new = 0):
         ylab = "\\textit{JWST} (F150W, scaled 30 \%)"
     if new == 1:
         xlab = "\\textit{HST} (F160W)"
-    elif new == 0:  
+    elif new == 0:
         xlab = "\\textit{HST} (F160W, CANDELS)"
     elif new == 2:
         xlab = "\\textit{HST} (F160W, CANDELS VDW12)"
-    for g in ser+new*filshst:
+    for g in ser + new * filshst:
         g["frames"][0]["_sersic_rhalf"] = g["frames"][0]["sersic_rhalf"] / 40
         g["info"]["_H_Q"] = 1 - g["info"]["H_Q"]
         g["info"]["_H_PA"] = (g["info"]["H_PA"] + 90) / 180 * np.pi
@@ -1202,14 +1260,19 @@ def sersic_comparison(f150 = 0, save = None, n_mult = 1, new = 0):
         vis.plot_value_filters(ser, "VDW12_H_RE", "_sersic_rhalf", axis=axes[1])
         vis.plot_value_filters(ser, "_VDW12_H_Q", "sersic_ellip", axis=axes[2])
         # vis.plot_value_filters(ser, "_H_PA", "sersic_theta", axis=axes[3])
-    print(f"Number of galaxies in the  sersic plot: {len(axes[0].lines[0].get_data()[0])}")
+    print(
+        f"Number of galaxies in the  sersic plot: {len(axes[0].lines[0].get_data()[0])}"
+    )
     axes[0].plot([0, 5], [0, 5], c="#e70000ff", linestyle="--", linewidth=2)
     axes[1].plot([0, 40], [0, 40], c="#e70000ff", linestyle="--", linewidth=2)
     axes[2].plot([0, 1], [0, 1], c="#e70000ff", linestyle="--", linewidth=2)
     # axes[3].plot([0, np.pi], [0, np.pi], c="#e70000ff", linestyle="--", linewidth=2)
     for i in range(3):  # 4):
         axes[i].lines[0].set(
-            markerfacecolor="#267ab46b", markeredgecolor="#00346899", alpha=None, markersize = 8
+            markerfacecolor="#267ab46b",
+            markeredgecolor="#00346899",
+            alpha=None,
+            markersize=8,
         )
         axes[i].tick_params(
             axis="both",
@@ -1228,24 +1291,24 @@ def sersic_comparison(f150 = 0, save = None, n_mult = 1, new = 0):
         xlim=(0, 5),
         ylim=(0, 5),
     )
-    axes[0].set_xlabel("$n$ "+xlab, fontsize = lsize)
-    axes[0].set_ylabel("$n$ "+ylab, fontsize = lsize)
+    axes[0].set_xlabel("$n$ " + xlab, fontsize=lsize)
+    axes[0].set_ylabel("$n$ " + ylab, fontsize=lsize)
     if new == 1:
-        axes[0].set(xlim=(0,3.5),ylim = (0,3.5))
+        axes[0].set(xlim=(0, 3.5), ylim=(0, 3.5))
     axes[1].set(
         title="",  # Sersic radius",
         xlim=(0, 1),
         ylim=(0, 1),
     )
-    axes[1].set_xlabel("$r_\mathrm{eff}$ (arcsec) "+xlab, fontsize = lsize)
-    axes[1].set_ylabel(ylabel="$r_\mathrm{eff}$ (arcsec) "+ylab, fontsize = lsize)
+    axes[1].set_xlabel("$r_\mathrm{eff}$ (arcsec) " + xlab, fontsize=lsize)
+    axes[1].set_ylabel(ylabel="$r_\mathrm{eff}$ (arcsec) " + ylab, fontsize=lsize)
     axes[2].set(
         title="",  # Sersic ellipticity",
         xlim=(0, 1),
         ylim=(0, 1),
     )
-    axes[2].set_xlabel("$e$ "+xlab, fontsize = lsize)
-    axes[2].set_ylabel("$e$ "+ylab, fontsize = lsize)
+    axes[2].set_xlabel("$e$ " + xlab, fontsize=lsize)
+    axes[2].set_ylabel("$e$ " + ylab, fontsize=lsize)
     """
     axes[3].set(
         title="", #Sersic position angle",
@@ -1262,6 +1325,7 @@ def sersic_comparison(f150 = 0, save = None, n_mult = 1, new = 0):
     fig.set_layout_engine(layout="tight")
     if save is not None:
         fig.savefig(save)
+
 
 def ginim20_class(save=None):
     vis.plot_grided(
@@ -1312,22 +1376,31 @@ def ginim20_class(save=None):
     if save is not None:
         fig.savefig(save)
 
+
 def ginim20_class_2(save=None):
     fig = plt.figure()
     gs = fig.add_gridspec(1, 2)
     axes = gs.subplots()
-    vis.points_multi_clas(fil, "F(G, M20)", axis = [axes[1]], no_legend = True, new_names = {"bulges":  "Bulge"})
-    vis.points_multi_clas(fil, "S(G, M20)", axis = [axes[0]], no_legend = True, new_names = {"mergers": "Interacting-Merger"})
+    vis.points_multi_clas(
+        fil, "F(G, M20)", axis=[axes[1]], no_legend=True, new_names={"bulges": "Bulge"}
+    )
+    vis.points_multi_clas(
+        fil,
+        "S(G, M20)",
+        axis=[axes[0]],
+        no_legend=True,
+        new_names={"mergers": "Interacting-Merger"},
+    )
     axes[1].set_ylim(-1.3, 0.8)
     axes[0].set_ylim(-0.18, 0.1)
     axes[1].set_xticks([0, 1], ["without bulge", "with bulge"])
     axes[0].set_xticks([0, 1], ["others", "interact./mergers"])
     axes[1].set_xlim(-0.3, 1.3)
     axes[0].set_xlim(-0.3, 1.3)
-    axes[1].set_ylabel("")#Bulge stat. $F(G, M_{20}$)")
-    axes[0].set_ylabel("")#Merger stat. $S(G, M_{20}$)")
+    axes[1].set_ylabel("")  # Bulge stat. $F(G, M_{20}$)")
+    axes[0].set_ylabel("")  # Merger stat. $S(G, M_{20}$)")
     axes[1].set_title("$F(G, M_{20})$")
-    axes[0].set_title("$S(G, M_{20})$")    
+    axes[0].set_title("$S(G, M_{20})$")
     for ax in axes:
         ax.tick_params(
             axis="both",
@@ -1347,8 +1420,8 @@ def ginim20_class_2(save=None):
     L.texts[1].set_text("median")
     fig.set_size_inches(7, 3.6)
     fig.suptitle("")
-    #fig.set_layout_engine(layout="tight")
-    plt.subplots_adjust(top = 0.87, bottom = 0.12, left=0.115, right=0.955, wspace=0.28)
+    # fig.set_layout_engine(layout="tight")
+    plt.subplots_adjust(top=0.87, bottom=0.12, left=0.115, right=0.955, wspace=0.28)
     if save is not None:
         fig.savefig(save)
 
@@ -1393,7 +1466,7 @@ def separation_table(gal1, gal2, parameters):
     print("\n----------\n")
 
 
-def masking_examples_6(galaxies, save = None):
+def masking_examples_6(galaxies, save=None):
     fig = plt.figure(figsize=(7.77, 5.7))
     gs = fig.add_gridspec(
         2, 3, wspace=0.065, hspace=0.175, left=0.03, right=0.97, top=0.925, bottom=0.045
@@ -1418,7 +1491,7 @@ def masking_examples_6(galaxies, save = None):
         fig.savefig(save)
 
 
-def masking_examples_4(galaxies, save = None):
+def masking_examples_4(galaxies, save=None):
     fig = plt.figure(figsize=(10.35, 2.95))
     gs = fig.add_gridspec(
         1,
@@ -1462,79 +1535,122 @@ def plot_segmentation(g, axis=None):
     axis.contour(f.mask, levels=1, colors="red", linestyles="--", linewidths=1.7)
 
 
-def sersic_filters(save = None):
+def sersic_filters(save=None):
     fig = plt.figure()
     gs = fig.add_gridspec(2, 1, hspace=0)
     axes = gs.subplots(sharex=True)
     fullh = filsfull
     filters = ["F090W", "F115W", "F150W", "F200W", "F277W", "F356W", "F410M", "F444W"]
-    nf = {f:float(f[1:-1])/100 for f in filters}
+    nf = {f: float(f[1:-1]) / 100 for f in filters}
     sernf = dict()
     serrf = dict()
     for f in filters:
-        fullh = resu.get_subset(fullh, resu.get_galaxies_filter(fullh,f))
+        fullh = resu.get_subset(fullh, resu.get_galaxies_filter(fullh, f))
     print(len(fullh))
     for f in filters:
-        valsnraw = [resu.get_filter_or_avg(g, "sersic_n", filt = f) for g in fullh]
+        valsnraw = [resu.get_filter_or_avg(g, "sersic_n", filt=f) for g in fullh]
         valuesn = np.array([v for v in valsnraw if v is not None])
-        valsrraw = [resu.get_filter_or_avg(g, "sersic_rhalf", filt = f) for g in fullh]
-        valuesr = np.array([v for v in valsrraw if v is not None])/40
-        
+        valsrraw = [resu.get_filter_or_avg(g, "sersic_rhalf", filt=f) for g in fullh]
+        valuesr = np.array([v for v in valsrraw if v is not None]) / 40
+
         n_bootstrap = 1000  # Number of bootstrap samples
         # Sérsic index
-        medians_n = [np.nanmedian(np.random.choice(valuesn, size=len(valuesn), replace=True))
-                            for _ in range(n_bootstrap)]
-        medians_r = [np.nanmedian(np.random.choice(valuesr, size=len(valuesr), replace=True))
-                            for _ in range(n_bootstrap)]
+        medians_n = [
+            np.nanmedian(np.random.choice(valuesn, size=len(valuesn), replace=True))
+            for _ in range(n_bootstrap)
+        ]
+        medians_r = [
+            np.nanmedian(np.random.choice(valuesr, size=len(valuesr), replace=True))
+            for _ in range(n_bootstrap)
+        ]
 
-        sernf[f] = [np.percentile(medians_n, v) for v in [50,16,84]]
-        serrf[f] = [np.percentile(medians_r, v) for v in [50,33,67]]
-        
-    axes[0].errorbar([nf[f] for f in filters], [sernf[f][0] for f in filters], [[sernf[f][0]-sernf[f][1] for f in filters],[sernf[f][2]-sernf[f][0] for f in filters]],ecolor="black", capsize = 5, linestyle = "")
+        sernf[f] = [np.percentile(medians_n, v) for v in [50, 16, 84]]
+        serrf[f] = [np.percentile(medians_r, v) for v in [50, 33, 67]]
+
+    axes[0].errorbar(
+        [nf[f] for f in filters],
+        [sernf[f][0] for f in filters],
+        [
+            [sernf[f][0] - sernf[f][1] for f in filters],
+            [sernf[f][2] - sernf[f][0] for f in filters],
+        ],
+        ecolor="black",
+        capsize=5,
+        linestyle="",
+    )
     axes[0].plot([nf[f] for f in filters], [sernf[f][0] for f in filters])
-    
-    
-    axes[1].errorbar([nf[f] for f in filters], [serrf[f][0] for f in filters], [[serrf[f][0]-serrf[f][1] for f in filters],[serrf[f][2]-serrf[f][0] for f in filters]],ecolor="black", capsize = 5, linestyle="")
+
+    axes[1].errorbar(
+        [nf[f] for f in filters],
+        [serrf[f][0] for f in filters],
+        [
+            [serrf[f][0] - serrf[f][1] for f in filters],
+            [serrf[f][2] - serrf[f][0] for f in filters],
+        ],
+        ecolor="black",
+        capsize=5,
+        linestyle="",
+    )
     axes[1].plot([nf[f] for f in filters], [serrf[f][0] for f in filters])
 
-    axes[0].lines[3].set(linestyle=":", c= "black", marker = "o", markersize = 10, markerfacecolor= "#4b92c3")
-    axes[1].lines[3].set(linestyle=":", c= "black", marker = "o", markersize = 10, markerfacecolor= "#4b92c3")
+    axes[0].lines[3].set(
+        linestyle=":", c="black", marker="o", markersize=10, markerfacecolor="#4b92c3"
+    )
+    axes[1].lines[3].set(
+        linestyle=":", c="black", marker="o", markersize=10, markerfacecolor="#4b92c3"
+    )
 
-    axes[1].set_xlabel("$\lambda$ ($\mu m$)", fontsize = 16)
-    axes[1].set_ylabel("$\left<r_{\mathrm{eff}}\\right>$ (arcsec)", fontsize = 16)
-    axes[0].set_ylabel("$\left<n\\right>$", fontsize = 16)
+    axes[1].set_xlabel("$\lambda$ ($\mu m$)", fontsize=16)
+    axes[1].set_ylabel("$\left<r_{\mathrm{eff}}\\right>$ (arcsec)", fontsize=16)
+    axes[0].set_ylabel("$\left<n\\right>$", fontsize=16)
     for f in filters:
-        axes[0].annotate(f,(nf[f],sernf[f][0]),ha='left',textcoords="offset points", size = 10,xytext=(7,-10))
-        axes[1].annotate(f,(nf[f],serrf[f][0]),ha='left',textcoords="offset points", size = 10,xytext=(7,0))
-    
-    axes[0].texts[-1].set(ha='right',position=(6, 6))
-    axes[0].texts[-2].set(ha="right", position=(-7,-10))
-    axes[0].texts[-3].set(position=(7,0))
-    axes[1].texts[-1].set(ha='right',position=(6,8))
-    axes[1].texts[-2].set(ha='right',position=(-7,-10))
+        axes[0].annotate(
+            f,
+            (nf[f], sernf[f][0]),
+            ha="left",
+            textcoords="offset points",
+            size=10,
+            xytext=(7, -10),
+        )
+        axes[1].annotate(
+            f,
+            (nf[f], serrf[f][0]),
+            ha="left",
+            textcoords="offset points",
+            size=10,
+            xytext=(7, 0),
+        )
+
+    axes[0].texts[-1].set(ha="right", position=(6, 6))
+    axes[0].texts[-2].set(ha="right", position=(-7, -10))
+    axes[0].texts[-3].set(position=(7, 0))
+    axes[1].texts[-1].set(ha="right", position=(6, 8))
+    axes[1].texts[-2].set(ha="right", position=(-7, -10))
 
     fig.set_size_inches(4.7, 6.2)
     fig.set_layout_engine(layout="tight")
     if save is not None:
         fig.savefig(save)
 
-def combined_separation(save = None):
+
+def combined_separation(save=None):
     fig = plt.figure()
     gs = fig.add_gridspec(1, 3, wspace=0)
     axes = gs.subplots(sharey=True)
-    bulges_separation(mass = None, axis = axes[0], e = 0.01)
-    mergers_separation(mass = None, axis = axes[1], e = 0.01)
-    clumpy_separation(mass = None, axis = axes[2])
-    axes[0].set_ylabel("Gini",fontsize = 22)
+    bulges_separation(mass=None, axis=axes[0], e=0.01)
+    mergers_separation(mass=None, axis=axes[1], e=0.01)
+    clumpy_separation(mass=None, axis=axes[2])
+    axes[0].set_ylabel("Gini", fontsize=22)
     axes[1].set_ylabel("")
     axes[2].set_ylabel("")
-    axes[0].set_xlabel("M$_{20}$", fontsize = 22)
-    axes[1].set_xlabel("M$_{20}$", fontsize = 22)
-    axes[2].set_xlabel("Asymmetry, A", fontsize = 22)
+    axes[0].set_xlabel("M$_{20}$", fontsize=22)
+    axes[1].set_xlabel("M$_{20}$", fontsize=22)
+    axes[2].set_xlabel("Asymmetry, A", fontsize=22)
     fig.set_size_inches(14, 5)
     fig.set_layout_engine(layout="tight")
     if save is not None:
         fig.savefig(save)
+
 
 if __name__ == "__main__":
     """Comment out lines corresponding to plots you want to create."""
@@ -1554,11 +1670,11 @@ if __name__ == "__main__":
     # separation_table(filmb, filob, parameters)
     # separation_table(filmc, filoc, parameters)
     # mergers_separation(mass = None, save = "../../out/pdfs/josef_mergers.pdf")
-    # mergers_separation_a(mass = None, save = "../../out/pdfs/josef_mergers_a.pdf")    
+    # mergers_separation_a(mass = None, save = "../../out/pdfs/josef_mergers_a.pdf")
     # bulges_separation(mass = None, save = "../../out/pdfs/josef_bulges.pdf")
     # clumpy_separation(mass = None, save = "../../out/pdfs/josef_clumpy.pdf")
     # mergers_separation(mass = None, save = "../../out/pdfs/josef_mergers_frac.pdf", e = 0.01)
-    # mergers_separation_a(mass = None, save = "../../out/pdfs/josef_mergers_a_frac.pdf", e = 0.005)    
+    # mergers_separation_a(mass = None, save = "../../out/pdfs/josef_mergers_a_frac.pdf", e = 0.005)
     # bulges_separation(mass = None, save = "../../out/pdfs/josef_bulges_frac.pdf", e = 0.01)
     # optimal_rfw(save = "../../out/pdfs/josef_rfw.pdf")
     # ren_et_al(save = "../../out/pdfs/josef_Ren.pdf")
@@ -1582,15 +1698,15 @@ if __name__ == "__main__":
         "U4_26324",
         "U4_21440",
     ]
-    #masking_examples_4(names, save = "../../out/pdfs/josef_masks.pdf")
-    #mergers_nstatistics(mass = None, save = "../../out/pdfs feedback/josef_mergers_distance.pdf")
-    #mergers_nstatistics(mass = None, save = "../../out/pdfs feedback/pngs/josef_mergers_distance.png")
-    #bulges_nstatistics(mass = None, save = "../../out/pdfs feedback/josef_bulges_distance.pdf")
-    #bulges_nstatistics(mass = None, save = "../../out/pdfs feedback/pngs/josef_bulges_distance.png")
-    #sersic_comparison(f150=True, save = "../../out/pdfs feedback/josef_sersic_150.pdf")
-    #sersic_comparison(f150=1, save = "../../out/pdfs feedback/pngs/josef_sersic_150.png")
-    #sersic_comparison(f150=2, save = "../../out/pdfs feedback/josef_sersic_150hst.pdf")
-    #sersic_comparison(f150=2, save = "../../out/pdfs feedback/pngs/josef_sersic_150_hst.png", n_mult = 1)
+    # masking_examples_4(names, save = "../../out/pdfs/josef_masks.pdf")
+    # mergers_nstatistics(mass = None, save = "../../out/pdfs feedback/josef_mergers_distance.pdf")
+    # mergers_nstatistics(mass = None, save = "../../out/pdfs feedback/pngs/josef_mergers_distance.png")
+    # bulges_nstatistics(mass = None, save = "../../out/pdfs feedback/josef_bulges_distance.pdf")
+    # bulges_nstatistics(mass = None, save = "../../out/pdfs feedback/pngs/josef_bulges_distance.png")
+    # sersic_comparison(f150=True, save = "../../out/pdfs feedback/josef_sersic_150.pdf")
+    # sersic_comparison(f150=1, save = "../../out/pdfs feedback/pngs/josef_sersic_150.png")
+    # sersic_comparison(f150=2, save = "../../out/pdfs feedback/josef_sersic_150hst.pdf")
+    # sersic_comparison(f150=2, save = "../../out/pdfs feedback/pngs/josef_sersic_150_hst.png", n_mult = 1)
     names = [
         "COS4_02049",
         "COS4_02167",
@@ -1599,10 +1715,10 @@ if __name__ == "__main__":
         "U4_26324",
         "U4_21440",
     ]
-    #masking_examples_6(names, save = "../../out/supl/josef_masks_6.png")
-    #mergers_separation(mass = None, save = "../../out/supl/josef_mergers_frac.png", e = 0.01)
-    #mergers_separation_a(mass = None, save = "../../out/supl/josef_mergers_frac_a.png", e = 0.005)    
-    #bulges_separation(mass = None, save = "../../out/supl/josef_bulges_frac.png", e = 0.01)
-    #sersic_comparison(f150=2, save = "../../out/supl/josef_sersic_150hst_n.png", new = True)
-    #sersic_comparison(f150=3, save = "../../out/supl/josef_sersic_160_hst.png")
+    # masking_examples_6(names, save = "../../out/supl/josef_masks_6.png")
+    # mergers_separation(mass = None, save = "../../out/supl/josef_mergers_frac.png", e = 0.01)
+    # mergers_separation_a(mass = None, save = "../../out/supl/josef_mergers_frac_a.png", e = 0.005)
+    # bulges_separation(mass = None, save = "../../out/supl/josef_bulges_frac.png", e = 0.01)
+    # sersic_comparison(f150=2, save = "../../out/supl/josef_sersic_150hst_n.png", new = True)
+    # sersic_comparison(f150=3, save = "../../out/supl/josef_sersic_160_hst.png")
     plt.show()

@@ -6,8 +6,8 @@ the program. These classes at initiation store base-data (fits date, etc)
 provided and subsequently can use them for calculations, visualisations, etc.
 """
 
-import warnings
 import time
+import warnings
 
 import astropy
 import matplotlib.pyplot as plt
@@ -79,7 +79,7 @@ class galaxy:
             for f in self.frames:
                 f.adjust_resolution(psf_res, self.pixel_size)
         for f in self.frames:
-            f.calc_frames()
+            f.calc_frames(centre=self.info.get("Centre"))
         self.target_flag = self.target_test(self.frames)
         if psf_res is None:
             self.update_frame_masks()
@@ -287,12 +287,14 @@ class frame:
         self.adjustment = None
         self.flag_seg = 0
 
-    def calc_frames(self):
+    def calc_frames(self, centre=None):
         """Undertakes preparatory calculations of statmorph, most importantly
         determination of the target and mask segmentation maps.
         """
         self.convolved = self.convolve(self.data)
-        self.objects_seg, self.threshold, self.cmax = self.segment(self.convolved)
+        self.objects_seg, self.threshold, self.cmax = self.segment(
+            self.convolved, centre=centre
+        )
         self.get_background(self.objects_seg, self.data)
         self.data_sub = self.bg_subtract(self.data)
         self.target, self.mask = self.isolate(self.objects_seg, self.cmax)
@@ -300,7 +302,7 @@ class frame:
 
     def calc_stmo(self):
         """Runs statmorph calculation and stores the result."""
-        self.stmo = self.get_stmo(self.data_sub, self.target, self.mask,psf= self.psf)
+        self.stmo = self.get_stmo(self.data_sub, self.target, self.mask, psf=self.psf)
 
     def adjust_resolution(self, psf, pixel_size):
         """Adjust the resolution of the frame image and its psf based on
@@ -326,8 +328,8 @@ class frame:
         """
         if self.psf is not None:
             if type(psf) == list:
-                fin_fwhm = psf[2]/ pixel_size
-                kernel = psfm.get_conv_kernel(self.psf, psf[0], pixel_size / psf[1]/scale_f)
+                fin_fwhm = psf[2] / pixel_size
+                kernel = psfm.get_conv_kernel(self.psf, psf[0], pixel_size / psf[1])
             else:
                 warnings.warn(
                     f"Generating kernel for psf transformation failed, using Gaussian approximation instead."
@@ -377,7 +379,7 @@ class frame:
         kernel = make_2dgaussian_kernel(fwhm, size=size)
         return convolve(data, kernel)
 
-    def segment(self, data):
+    def segment(self, data, centre=None):
         """Creates segmentation map based on the inputted data.
 
         Finds threshold optimal for segmentation map creation based on methods
@@ -390,6 +392,7 @@ class frame:
 
         Args:
             data (numpy.array or similar): Data to be segmented.
+            centre (None or (int, int)): Starting position of the target
 
         Returns:
             tuple: A tuple of:
@@ -405,7 +408,7 @@ class frame:
         # sigma_clip = SigmaClip(sigma=3.0, maxiters=10)
         # threshold = detect_threshold(data, nsigma=8.0, sigma_clip=sigma_clip)
         agr = int(self.name[1:-1]) < 150 and not self.adjustment
-        cmax = seg.find_max(data)
+        cmax = seg.find_max(data, start=centre)
         threshold = seg.find_threshold(data, cmax, agr)
         seg_map = detect_sources(data, threshold, 40)
         if seg_map is not None:

@@ -16,6 +16,7 @@ import astropy
 import matplotlib.pyplot as plt
 import numpy as np
 
+import config
 import stmo
 
 
@@ -54,6 +55,9 @@ def galaxies_data(
         psf_res (float): A target resolution in terms of width of psf in
             kiloparsecs to which all frames should be adjusted before
             statmorph calculation. If `None`, no adjustment is made.
+            In recent versions this input has been suplemented by a variant
+            where a tuple is passed, holding (full target PSF, pixel size in
+            kpc, PSF fwhm in kpc).
 
     Returns:
         list: List of either :obj:`stmo.galaxy` or dictionaries based on the
@@ -163,12 +167,8 @@ def adhoc_path(path):
 
     Should be moved to some config file later.
     """
-    p = "../MP_cutouts/out/galfit_results/" + path
-    if p[-4:] == ".pdf":
-        p = p[:-4]
-    p = p.replace("big/", "big/results_")
-    p = p.replace("small/", "small/results_")
-    return p
+    p = config.cutout_path + path
+    return config.f_cutout_path(p)
 
 
 def get_fitss(galaxy):
@@ -293,8 +293,8 @@ def get_frame_data(frame, galaxy):
     Args:
         frame (stmo.frame): Internal representation of a frame to be
             translated into an output dictionary.
-        galaxy (stmo.galaxy): Internal representation of a galaxy to be used 
-            in the translation. 
+        galaxy (stmo.galaxy): Internal representation of a galaxy to be used
+            in the translation.
 
     Returns:
         dict: A dictionary holding information relating to the frame, its
@@ -360,6 +360,6 @@ def get_frame_data(frame, galaxy):
         "_bg_std": float(frame.bg_std),
         "_flag_seg": int(frame.flag_seg),
         "_flag_corr": int(frame.flag_corr),
-        "_s_rhalf_kpc": float(st.sersic_rhalf*galaxy.pixel_size)
+        "_s_rhalf_kpc": float(st.sersic_rhalf * galaxy.pixel_size),
     }
     return data

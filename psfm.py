@@ -18,8 +18,8 @@ Attributes:
         fits of PSFs.
 """
 
-import warnings
 import os
+import warnings
 
 import astropy
 import matplotlib.pyplot as plt
@@ -29,39 +29,25 @@ from astropy.cosmology import LambdaCDM
 from astropy.modeling import fitting, models
 from photutils.psf import TopHatWindow, create_matching_kernel, matching
 
+import config
+
 # cosmological parameters from Planck 2018
-H0 = 67.49
-Om0 = 0.315
-Od0 = 0.6847
+H0 = config.cosm_H0
+Om0 = config.cosm_Om0
+Od0 = config.cosm_Od0
 
 # astropy cosmology
 cosm = LambdaCDM(H0, Om0, Od0)
 
 # angular pixel size in radians
-sc = 0.025 / 3600 / 180 * np.pi
-
+sc = config.pixel_size
 # pre-calculated fwhms for the filters
-calculated_fwhms = {
-    "F090W": (1.1995772884306106, 1.149118956666665),
-    "F115W": (1.470719758687787, 1.5051056155391633),
-    "F150W": (1.9493943876899091, 1.8991272065113258),
-    "F182M": (2.324399468263498, 2.375521701356913),
-    "F200W": (2.4781960999114885, 2.5286361972775047),
-    "F210M": (2.645962560917274, 2.6954729402728326),
-    "F277W": (3.430500911832727, 3.521493646912973),
-    "F300M": (3.7620623355473835, 3.8648936085711054),
-    "F335M": (4.22538001762926, 4.340623710243656),
-    "F356W": (4.543749121910588, 4.424874502103289),
-    "F410M": (5.129923450562115, 5.261257319645101),
-    "F430M": (5.3889589541225735, 5.52392352664033),
-    "F444W": (5.447786223407964, 5.582801195553154),
-    "F460M": (5.824326385917065, 5.965375660435022),
-    "F480M": (6.054312102519142, 6.199064508582882),
-}
+calculated_fwhms = config.psf_fwhm_sizes
 
 g_scale = 1
 
-def get_psf(name, scale = g_scale):
+
+def get_psf(name, scale=g_scale):
     """Tries to get psf of the frame.
 
     Based on the filter's name tries to obtain the point spread function
@@ -75,17 +61,21 @@ def get_psf(name, scale = g_scale):
             were found.
     """
     try:
-        #path = f"../psf/webbpsf_NIRCam_{name}_pixsc25mas.fits"
-        dpath = "../psf/"
-        files = [os.path.join(dpath, f) for f in os.listdir(dpath) if os.path.isfile(os.path.join(dpath, f)) and f[-5:] == ".fits"]
+        # path = f"../psf/webbpsf_NIRCam_{name}_pixsc25mas.fits"
+        dpath = config.psf_path
+        files = [
+            os.path.join(dpath, f)
+            for f in os.listdir(dpath)
+            if os.path.isfile(os.path.join(dpath, f)) and f[-5:] == ".fits"
+        ]
         film = [f for f in files if (name in f)]
         if film:
             psf = astropy.io.fits.open(film[0])[0].data
             if len(psf.shape) == 3:
-                psf = np.sum(psf, axis = 0)
+                psf = np.sum(psf, axis=0)
             psf /= np.nansum(psf)
             if scale != 1:
-                psf = scale_psf(psf, 1/scale)
+                psf = scale_psf(psf, 1 / scale)
             return psf
         else:
             return None
